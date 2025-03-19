@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ForumApp.Migrations
 {
     [DbContext(typeof(ForumDbContext))]
-    [Migration("20250319092952_AddRoleTable")]
-    partial class AddRoleTable
+    [Migration("20250319133428_FixCascadeIssue")]
+    partial class FixCascadeIssue
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -65,16 +65,68 @@ namespace ForumApp.Migrations
                     b.Property<string>("FilePath")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<decimal?>("Price")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("nvarchar(max)")
+                        .HasDefaultValue("Chờ duyệt");
+
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
+                    b.Property<decimal?>("TotalRating")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.HasIndex("CategoryId");
 
+                    b.HasIndex("UserId");
+
                     b.ToTable("Posts");
+                });
+
+            modelBuilder.Entity("ForumApp.Models.Rating", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("PostId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("PostId1")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Stars")
+                        .HasColumnType("int");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PostId");
+
+                    b.HasIndex("PostId1");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Ratings");
                 });
 
             modelBuilder.Entity("ForumApp.Models.Role", b =>
@@ -115,6 +167,9 @@ namespace ForumApp.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("QRImagePath")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Username")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -135,7 +190,38 @@ namespace ForumApp.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("ForumApp.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.Navigation("Category");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("ForumApp.Models.Rating", b =>
+                {
+                    b.HasOne("ForumApp.Models.Post", "Post")
+                        .WithMany()
+                        .HasForeignKey("PostId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ForumApp.Models.Post", null)
+                        .WithMany("Ratings")
+                        .HasForeignKey("PostId1");
+
+                    b.HasOne("ForumApp.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Post");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("ForumApp.Models.User", b =>
@@ -152,6 +238,11 @@ namespace ForumApp.Migrations
             modelBuilder.Entity("ForumApp.Models.Category", b =>
                 {
                     b.Navigation("Posts");
+                });
+
+            modelBuilder.Entity("ForumApp.Models.Post", b =>
+                {
+                    b.Navigation("Ratings");
                 });
 #pragma warning restore 612, 618
         }

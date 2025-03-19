@@ -11,6 +11,7 @@ namespace ForumApp.Data
         public DbSet<Post> Posts { get; set; }
         public DbSet<Category> Categories { get; set; }
         public DbSet<Role> Roles { get; set; }
+        public DbSet<Rating> Ratings { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -37,12 +38,35 @@ namespace ForumApp.Data
                 entity.Property(p => p.Content).IsRequired(false);
                 entity.Property(p => p.FilePath).IsRequired(false);
                 entity.Property(p => p.CreatedAt).HasDefaultValueSql("GETDATE()");
+                entity.Property(p => p.Type).IsRequired();
+                entity.Property(p => p.Status).HasDefaultValue("Chờ duyệt");
+                entity.Property(p => p.TotalRating).HasDefaultValue(null);
 
-                // Định nghĩa mối quan hệ với Category
                 entity.HasOne(p => p.Category)
                       .WithMany(c => c.Posts)
                       .HasForeignKey(p => p.CategoryId)
-                      .OnDelete(DeleteBehavior.Restrict);
+                      .OnDelete(DeleteBehavior.Restrict); // Không xóa danh mục khi có bài viết
+
+                entity.HasOne(p => p.User)
+                      .WithMany()
+                      .HasForeignKey(p => p.UserId)
+                      .OnDelete(DeleteBehavior.Restrict); // Không xóa User khi xóa bài viết
+            });
+
+            modelBuilder.Entity<Rating>(entity =>
+            {
+                entity.HasKey(r => r.Id);
+                entity.Property(r => r.Stars).IsRequired();
+
+                entity.HasOne(r => r.Post)
+                      .WithMany()
+                      .HasForeignKey(r => r.PostId)
+                      .OnDelete(DeleteBehavior.Cascade); // Xóa bài viết thì xóa luôn đánh giá
+
+                entity.HasOne(r => r.User)
+                      .WithMany()
+                      .HasForeignKey(r => r.UserId)
+                      .OnDelete(DeleteBehavior.Restrict); // Không xóa User khi xóa đánh giá
             });
         }
     }

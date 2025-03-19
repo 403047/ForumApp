@@ -33,6 +33,12 @@ namespace ForumApp.Controllers
                 HttpContext.Session.SetInt32("UserId", user.Id);
                 HttpContext.Session.SetString("UserRole", user.Role.RoleName);
 
+                // Kiểm tra session ngay sau khi thiết lập
+                int? sessionUserId = HttpContext.Session.GetInt32("UserId");
+                string sessionUserRole = HttpContext.Session.GetString("UserRole");
+
+                Console.WriteLine($"Session UserId: {sessionUserId}, Session UserRole: {sessionUserRole}");
+
                 return RedirectToAction("Index", "Home");
             }
 

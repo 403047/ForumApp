@@ -21,5 +21,8 @@ namespace ForumApp.Models
         [ForeignKey("Role")]
         public int IdRole { get; set; }
         public Role Role { get; set; }
+
+        // Đường dẫn ảnh QR (có thể null)
+        public string? QRImagePath { get; set; }
     }
 }
