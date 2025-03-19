@@ -1,0 +1,19 @@
+﻿@model IEnumerable<ForumApp.Models.Post>
+@{
+    ViewData["Title"] = "Home";
+}
+<h1>Bài viết</h1>
+@foreach (var post in Model)
+{
+    <div class="card mb-3">
+        <div class="card-body">
+            <h5 class="card-title">@post.Title</h5>
+            <p class="card-text">@post.Content</p>
+            <p class="card-text">
+                <small class="text-muted">
+                    Đăng lúc @post.CreatedAt.ToString("g") - Danh mục: @post.Category
+                </small>
+            </p>
+        </div>
+    </div>
+}
