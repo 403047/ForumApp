@@ -41,30 +41,25 @@ namespace ForumApp.Controllers
                 UserId = userId.Value,
                 Stars = rating
             };
-
             _context.Ratings.Add(newRating);
             await _context.SaveChangesAsync();
 
-            // Cập nhật tổng đánh giá của bài viết
-            await UpdatePostTotalRating(postId);
-
-            return Json(new { success = true, message = "Đánh giá thành công!" });
-        }
-
-        private async Task UpdatePostTotalRating(int postId)
-        {
-            var post = await _context.Posts.FindAsync(postId);
-            if (post == null) return;
-
+            // Thay vì gán post.TotalRating (read-only), ta chỉ tính trung bình tại chỗ
+            // để trả về cho Ajax (hoặc hiển thị ngay nếu cần).
             var ratings = await _context.Ratings
                 .Where(r => r.PostId == postId)
                 .Select(r => r.Stars)
                 .ToListAsync();
 
-            post.TotalRating = ratings.Any() ? (decimal?)Convert.ToDecimal(ratings.Average()) : null;
+            var averageRating = ratings.Any() ? ratings.Average() : 0;
 
-            _context.Posts.Update(post);
-            await _context.SaveChangesAsync();
+            // Trả về JSON để JavaScript có thể hiển thị ngay.
+            return Json(new
+            {
+                success = true,
+                message = "Đánh giá thành công!",
+                average = averageRating.ToString("0.0")
+            });
         }
     }
 }

@@ -4,61 +4,68 @@
     ViewData["Title"] = "Đăng bài viết";
 }
 
-<h2>Đăng bài viết</h2>
+<div class="container mt-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h2 class="card-title mb-0">Đăng bài viết</h2>
+        </div>
+        <div class="card-body">
+            <form asp-action="Create" method="post" enctype="multipart/form-data">
+                <div class="mb-3">
+                    <label asp-for="Title" class="form-label">Tiêu đề</label>
+                    <input asp-for="Title" class="form-control" required />
+                </div>
 
-<form asp-action="Create" method="post" enctype="multipart/form-data">
-    <div class="mb-3">
-        <label asp-for="Title" class="form-label">Tiêu đề</label>
-        <input asp-for="Title" class="form-control" required />
+                <div class="mb-3">
+                    <label class="form-label">Danh mục</label>
+                    <select asp-for="CategoryId" asp-items="@(new SelectList(ViewBag.Categories, "Id", "Name"))" class="form-select" required></select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Chọn cách nhập nội dung</label>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="ContentOption" value="text" id="contentText" required checked>
+                        <label class="form-check-label" for="contentText">Nhập nội dung</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="ContentOption" value="file" id="contentFile" required>
+                        <label class="form-check-label" for="contentFile">Tải file Word</label>
+                    </div>
+                </div>
+
+                <div id="textEditor" class="mb-3">
+                    <label class="form-label">Nội dung</label>
+                    <!-- Sử dụng name "Content" để gửi dữ liệu từ ô soạn thảo -->
+                    <textarea name="Content" id="Content" class="form-control" rows="5"></textarea>
+                </div>
+
+                <div id="fileUpload" class="mb-3" style="display:none;">
+                    <label class="form-label">Chọn file Word</label>
+                    <input type="file" name="file" class="form-control" accept=".doc,.docx" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Loại bài viết</label>
+                    <select asp-for="Type" class="form-select" id="Type" required>
+                        <option value="Miễn phí">Miễn phí</option>
+                        <option value="Trả phí">Trả phí</option>
+                    </select>
+                </div>
+
+                <div id="priceField" class="mb-3" style="display:none;">
+                    <label class="form-label">Giá tiền</label>
+                    <input name="Price" type="number" class="form-control" min="0" step="1000" />
+                </div>
+
+                <button type="submit" class="btn btn-primary">Đăng bài</button>
+            </form>
+        </div>
     </div>
-
-    <div class="mb-3">
-        <label class="form-label">Danh mục</label>
-        <select asp-for="CategoryId" asp-items="@(new SelectList(ViewBag.Categories, "Id", "Name"))"></select>
-
-    </div>
-
-    <div class="mb-3">
-        <label class="form-label">Chọn cách nhập nội dung</label><br />
-        <input type="radio" name="ContentOption" value="text" id="contentText" required checked />
-        <label for="contentText">Nhập nội dung</label>
-
-        <input type="radio" name="ContentOption" value="file" id="contentFile" required />
-        <label for="contentFile">Tải file Word</label>
-    </div>
-
-    <div id="textEditor" class="mb-3">
-        <label class="form-label">Nội dung</label>
-        <textarea asp-for="Content" id="Content"></textarea>
-    </div>
-
-    <div id="fileUpload" class="mb-3" style="display:none;">
-        <label class="form-label">Chọn file Word</label>
-        <input type="file" name="file" class="form-control" accept=".doc,.docx" />
-    </div>
-
-    <div class="mb-3">
-        <label class="form-label">Loại bài viết</label>
-        <select asp-for="Type" class="form-select" required>
-            <option value="Miễn phí">Miễn phí</option>
-            <option value="Trả phí">Trả phí</option>
-        </select>
-    </div>
-
-    <div id="priceField" class="mb-3" style="display:none;">
-        <label class="form-label">Giá tiền</label>
-        <input asp-for="Price" type="number" class="form-control" min="0" step="1000" />
-    </div>
-
-    <button type="submit" class="btn btn-primary">Đăng bài</button>
-</form>
+</div>
 
 @section Scripts {
-    <!-- Thêm CKEditor 5 -->
     <script src="https://cdn.ckeditor.com/ckeditor5/39.0.1/classic/ckeditor.js"></script>
     <script>
-        let editorInstance;
-
         document.addEventListener("DOMContentLoaded", function () {
             const textEditor = document.getElementById("textEditor");
             const fileUpload = document.getElementById("fileUpload");
@@ -66,7 +73,7 @@
             const radioFile = document.getElementById("contentFile");
             const contentTextarea = document.getElementById("Content");
 
-            // Khởi tạo CKEditor 5
+            let editorInstance;
             ClassicEditor.create(contentTextarea).then(editor => {
                 editorInstance = editor;
             }).catch(error => {
@@ -83,19 +90,15 @@
                 }
             }
 
-            // Gán sự kiện khi radio button thay đổi
             radioText.addEventListener("change", toggleInputType);
             radioFile.addEventListener("change", toggleInputType);
-
-            // Gọi hàm ngay khi trang tải
             toggleInputType();
 
-            // Ẩn/hiện ô nhập giá tiền nếu là bài viết "Trả phí"
             document.getElementById('Type').addEventListener('change', function () {
                 document.getElementById('priceField').style.display = (this.value === 'Trả phí') ? 'block' : 'none';
             });
 
-            // Lấy dữ liệu CKEditor trước khi submit form
+            // Trước khi submit, cập nhật nội dung của CKEditor vào textarea
             document.querySelector('form').addEventListener('submit', function () {
                 if (editorInstance) {
                     contentTextarea.value = editorInstance.getData();
