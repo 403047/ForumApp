@@ -1,46 +1,69 @@
-﻿@model IEnumerable<ForumApp.Models.Post>
+﻿@{
+    Layout = "_Layout";
+}
 
 
-<div class="container mt-4">
-    <div class="card shadow-sm">
-        <div class="card-header bg-primary text-white">
-            <h3 class="card-title mb-0">Danh sách bài viết đã duyệt</h3>
-        </div>
-        <div class="card-body p-0">
-            <table class="table table-striped table-hover mb-0">
-                <thead class="table-dark">
-                    <tr>
-                        <th>Tiêu đề</th>
-                        <th>Người đăng</th>
-                        <th>Ngày đăng</th>
-                        <th>Tổng đánh giá</th>
-                        <th>Giá</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var post in Model.Where(p => p.Status == "Đã duyệt"))
-                    {
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Danh sách bài viết</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+</head>
+<body>
+    <div class="container mt-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h3 class="card-title mb-0">Danh sách bài viết đã duyệt</h3>
+            </div>
+            <div class="card-body p-0">
+                <table id="postsTable" class="table table-striped table-hover mb-0">
+                    <thead class="table-dark">
                         <tr>
-                            <td>
-                                <a href='@Url.Action("Details", "Post", new { id = post.Id })' class="text-decoration-none">
-                                    @post.Title
-                                </a>
-                            </td>
-                            <td>
-                                @* @(post.User != null ? post.User?.Username : "Không xác định")  *@
-                                @post.User?.Username
-                            </td>
-                            <td>@post.CreatedAt.ToString("dd/MM/yyyy")</td>
-                            <td>@post.TotalRating.ToString("0.0")</td>
-                            <td>
-                                @(post.CurrentPrice.HasValue
-                                    ? post.CurrentPrice.Value.ToString("0.00") + " VNĐ"
-                                    : "Miễn phí")
-                            </td>
+                            <th>Tiêu đề</th>
+                            <th>Người đăng</th>
+                            <th>Ngày đăng</th>
+                            <th>Tổng đánh giá</th>
+                            <th>Giá</th>
                         </tr>
-                    }
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        <!-- Dữ liệu sẽ được chèn vào đây thông qua Ajax -->
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
-</div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            $.ajax({
+                url: '@Url.Action("GetApprovedPosts", "Post")',
+                type: 'GET',
+                dataType: 'json',
+                success: function (data) {
+                    var tbody = $('#postsTable tbody');
+                    tbody.empty();
+        $.each(data, function (i, post) {
+            tbody.append(
+                '<tr>' +
+                    // Chú ý tên property trùng với JSON trả về
+                    '<td><a href="@Url.Action("Details", "Post")?id=' + post.id + '">' + post.title + '</a></td>' +
+                    '<td>' + post.username + '</td>' +
+                    '<td>' + post.createdAt + '</td>' +
+                    '<td>' + post.totalRating + '</td>' +
+                    '<td>' + post.price + '</td>' +
+                '</tr>'
+            );
+        });
+
+                },
+                error: function (xhr, status, error) {
+                    console.error("Lỗi khi lấy dữ liệu:", error);
+                }
+            });
+        });
+    </script>
+</body>
+</html>

@@ -19,19 +19,30 @@
             @if (Model.Type == "Trả phí")
             {
                 <div class="mb-3">
-                    <p class="mb-1"><strong>Loại bài viết:</strong> <span class="text-danger">Trả phí</span></p>
+                    <p class="mb-1">
+                        <strong>Loại bài viết:</strong>
+                        <span class="text-danger">Trả phí</span>
+                    </p>
                     @if (Model.CurrentPrice != null)
                     {
-                        <p class="mb-1"><strong>Giá:</strong> @Model.CurrentPrice VNĐ</p>
+                        <p class="mb-1">
+                            <strong>Giá:</strong> @Model.CurrentPrice VNĐ
+                        </p>
                     }
                     else
                     {
-                        <p class="mb-1"><strong>Giá:</strong> Chưa có thông tin</p>
+                        <p class="mb-1">
+                            <strong>Giá:</strong> Chưa có thông tin
+                        </p>
                     }
+
                     @if (!string.IsNullOrEmpty(Model.User?.QRImagePath))
                     {
                         <p class="mb-1"><strong>Quét mã QR để thanh toán:</strong></p>
-                        <img src='@Url.Content("~/uploads/" + Model.User.QRImagePath)' alt="QR Code" class="img-fluid" style="max-width:200px;" />
+                        <img src='@Url.Content("~/uploads/" + Model.User.QRImagePath)'
+                             alt="QR Code"
+                             class="img-fluid"
+                             style="max-width:200px;" />
                     }
                     else
                     {
@@ -48,17 +59,35 @@
             {
                 <div class="mb-3">
                     <h3>Nội dung bài viết:</h3>
-                    <div>
-                        <a href='@Url.Content(Model.FilePath)' target="_blank" class="btn btn-primary mb-2">
-                            Xem nội dung bài viết (File Word)
+
+                    <!-- Nút mở/tải file Word gốc (tùy ý giữ hoặc bỏ) -->
+                    <div class="mb-2">
+                        <a href='@Url.Content(Model.FilePath)'
+                           target="_blank"
+                           class="btn btn-primary me-2">
+                            Mở file Word gốc
                         </a>
-                        <p>
-                            <strong>Tệp đính kèm:</strong>
-                            <a href='@Url.Content(Model.FilePath)' download class="btn btn-outline-secondary btn-sm">
-                                Tải về file Word
-                            </a>
-                        </p>
                     </div>
+
+                    <!-- Hiển thị nội dung file Word theo trang -->
+                    <div>
+                        <iframe id="wordContentFrame"
+                                src="@Url.Action("ViewWordContent", "Post", new { id = Model.Id, pageNumber = 1 })"
+                                style="width:100%; min-height:600px; border:1px solid #ccc;">
+                        </iframe>
+                    </div>
+
+                    @if (Model.TotalPages.HasValue && Model.TotalPages.Value > 1)
+                    {
+                        <div class="mt-2">
+                            <button class="btn btn-info btn-sm me-2" onclick="prevPage()">Trang trước</button>
+                            <button class="btn btn-info btn-sm" onclick="nextPage()">Trang sau</button>
+                            <span class="ms-3">
+                                Trang hiện tại:
+                                <span id="currentPage">1</span> / @Model.TotalPages
+                            </span>
+                        </div>
+                    }
                 </div>
             }
             else
@@ -89,6 +118,7 @@
 
 @section Scripts {
     <script>
+        // Xử lý gửi đánh giá
         $(document).ready(function () {
             $("#submit-rating").click(function () {
                 var postId = $(this).data("post-id");
@@ -102,5 +132,30 @@
                 });
             });
         });
+
+        // =============== CODE THÊM CHUYỂN TRANG WORD ===============
+        var currentPage = 1;
+        var totalPages = @Model.TotalPages ?? 1; // nếu null thì gán 1
+
+        function updateFrame() {
+            var url = '@Url.Action("ViewWordContent", "Post")?id=@Model.Id&pageNumber=' + currentPage;
+            document.getElementById("wordContentFrame").src = url;
+            document.getElementById("currentPage").textContent = currentPage;
+        }
+
+        function nextPage() {
+            if (currentPage < totalPages) {
+                currentPage++;
+                updateFrame();
+            }
+        }
+
+        function prevPage() {
+            if (currentPage > 1) {
+                currentPage--;
+                updateFrame();
+            }
+        }
+        // ===========================================================
     </script>
 }

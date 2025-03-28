@@ -1,0 +1,109 @@
+﻿@model ForumApp.Models.Post
+
+@{
+    ViewData["Title"] = Model.Title;
+}
+
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h2 class="card-title mb-0">@Model.Title</h2>
+        </div>
+        <div class="card-body">
+            <div class="mb-3">
+                <p class="mb-1"><strong>Người đăng:</strong> @Model.User?.Username</p>
+                <p class="mb-1"><strong>Ngày đăng:</strong> @Model.CreatedAt.ToString("dd/MM/yyyy")</p>
+                <p class="mb-1"><strong>Danh mục:</strong> @Model.Category?.Name</p>
+            </div>
+
+            <div class="mb-3">
+                <p class="mb-1">
+                    <strong>Loại bài viết:</strong>
+                    @if (Model.Type == "Trả phí")
+                    {
+                        <span class="text-danger">Trả phí</span>
+                    <p><strong>Giá:</strong> @Model.Type VNĐ</p> <!-- Giá lấy từ thuộc tính Type -->
+                    }
+                    else
+                    {
+                    <span>Miễn phí</span>
+                    }
+                </p>
+            </div>
+
+            @if (!string.IsNullOrEmpty(Model.FilePath))
+            {
+                <div class="mb-3">
+                    <h3>Nội dung bài viết:</h3>
+
+                    <!-- Nút mở/tải file Word gốc -->
+                    <div class="mb-2">
+                        <a href='@Url.Content(Model.FilePath)'
+                           target="_blank"
+                           class="btn btn-primary me-2">
+                            Mở file Word gốc
+                        </a>
+                    </div>
+
+                    <!-- Hiển thị nội dung file Word -->
+                    <div>
+                        <iframe id="wordContentFrame"
+                                src="@Url.Action("ViewWordContent", "Post", new { id = Model.Id, pageNumber = 1 })"
+                                style="width:100%; min-height:600px; border:1px solid #ccc;">
+                        </iframe>
+                    </div>
+
+                    @if (Model.TotalPages.HasValue && Model.TotalPages.Value > 1)
+                    {
+                        <div class="mt-2">
+                            <button class="btn btn-info btn-sm me-2" onclick="prevPage()">Trang trước</button>
+                            <button class="btn btn-info btn-sm" onclick="nextPage()">Trang sau</button>
+                            <span class="ms-3">
+                                Trang hiện tại:
+                                <span id="currentPage">1</span> / @Model.TotalPages
+                            </span>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <p class="mb-3">Không có nội dung</p>
+            }
+
+            <hr />
+
+            <!-- Nút quay lại trang quản lý bài đăng -->
+            <a href="@Url.Action("Index", "QLBaiDang")" class="btn btn-secondary">Quay lại</a>
+
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Xử lý chuyển trang nội dung file Word
+        var currentPage = 1;
+        var totalPages = @Model.TotalPages ?? 1;
+
+        function updateFrame() {
+            var url = '@Url.Action("ViewWordContent", "Post")?id=@Model.Id&pageNumber=' + currentPage;
+            document.getElementById("wordContentFrame").src = url;
+            document.getElementById("currentPage").textContent = currentPage;
+        }
+
+        function nextPage() {
+            if (currentPage < totalPages) {
+                currentPage++;
+                updateFrame();
+            }
+        }
+
+        function prevPage() {
+            if (currentPage > 1) {
+                currentPage--;
+                updateFrame();
+            }
+        }
+    </script>
+}

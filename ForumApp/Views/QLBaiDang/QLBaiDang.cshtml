@@ -1,0 +1,89 @@
+﻿@model IEnumerable<ForumApp.Models.Post>
+
+@{
+    ViewData["Title"] = "Quản lý Bài Đăng";
+}
+
+<div class="container mt-4">
+    <div class="card shadow-lg">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h3 class="mb-0">Quản lý Bài Đăng Chờ Duyệt</h3>
+            <a href="@Url.Action("Index", "Home")" class="btn btn-light btn-sm">Quay lại</a>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Tiêu đề</th>
+                            <th>Tác giả</th>
+                            <th>Giá</th>
+                            <th class="text-center">Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var post in Model)
+                        {
+                            <tr>
+                                <td>
+                                    <a href="@Url.Action("ChiTietBaiDang", "QLBaiDang", new { id = post.Id })"
+                                       class="text-decoration-none text-primary fw-bold">
+                                        @post.Title
+                                    </a>
+                                </td>
+                                <td>@post.User.Username</td>
+                                <td>
+                                    @if (post.Type == "Miễn phí")
+                                    {
+                                        <span class="badge bg-success">Miễn phí</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-warning text-dark">Trả phí</span>
+                                    }
+                                </td>
+
+                                <td class="text-center">
+                                    <div class="d-flex gap-2 justify-content-center">
+                                        <form method="post" asp-action="DuyetBai" asp-controller="QLBaiDang">
+                                            <input type="hidden" name="id" value="@post.Id" />
+                                            <button type="submit" class="btn btn-success btn-sm px-3">
+                                                <i class="bi bi-check-circle"></i> Duyệt
+                                            </button>
+                                        </form>
+
+                                        <form method="post" asp-action="KhongDuyetBai" asp-controller="QLBaiDang">
+                                            <input type="hidden" name="id" value="@post.Id" />
+                                            <button type="submit" class="btn btn-danger btn-sm px-3">
+                                                <i class="bi bi-x-circle"></i> Không duyệt
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            @if (!Model.Any())
+            {
+                <div class="alert alert-warning text-center mt-3" role="alert">
+                    Không có bài đăng nào đang chờ duyệt.
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<style>
+    table thead {
+        background-color: #007bff;
+        color: white;
+    }
+
+    .btn-sm {
+        padding: 5px 10px;
+    }
+</style>
+

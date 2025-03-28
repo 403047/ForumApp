@@ -1,0 +1,101 @@
+﻿@model IEnumerable<ForumApp.Models.Category>
+
+@{
+    ViewData["Title"] = "Quản lý Danh Mục";
+}
+
+<div class="container mt-4">
+    <div class="card shadow-lg">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h3 class="mb-0">Quản lý Danh Mục</h3>
+            <button class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#addCategoryModal">Thêm danh mục</button>
+        </div>
+        <div class="card-body">
+            <div id="danhMucTable">
+                @await Html.PartialAsync("_DanhMucTable", Model)
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Thêm Danh Mục -->
+<div class="modal fade" id="addCategoryModal" tabindex="-1" aria-labelledby="addCategoryLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addCategoryLabel">Thêm Danh Mục</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="categoryName" class="form-control" placeholder="Tên danh mục">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                <button type="button" class="btn btn-primary" onclick="themDanhMuc()">Thêm</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function themDanhMuc() {
+        var tenDanhMuc = document.getElementById("categoryName").value;
+        if (!tenDanhMuc.trim()) {
+            alert("Tên danh mục không được để trống");
+            return;
+        }
+
+        fetch("@Url.Action("ThemDanhMuc", "DanhMuc")", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ Name: tenDanhMuc })
+        })
+        .then(response => response.text())
+        .then(data => {
+            document.getElementById("danhMucTable").innerHTML = data;
+            document.getElementById("categoryName").value = "";
+            var modal = bootstrap.Modal.getInstance(document.getElementById("addCategoryModal"));
+            modal.hide();
+        })
+        .catch(error => console.error("Lỗi:", error));
+    }
+        // Hàm sửa danh mục
+    function suaDanhMuc(id) {
+        var tenMoi = prompt("Nhập tên danh mục mới:");
+        if (!tenMoi || !tenMoi.trim()) {
+            alert("Tên danh mục không hợp lệ!");
+            return;
+        }
+
+        fetch("@Url.Action("SuaDanhMuc", "DanhMuc")", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ Id: id, Name: tenMoi })
+        })
+        .then(response => response.text())
+        .then(data => {
+            document.getElementById("danhMucTable").innerHTML = data;
+            alert("Cập nhật danh mục thành công!");
+        })
+        .catch(error => console.error("Lỗi:", error));
+    }
+
+    // Hàm xóa danh mục
+    function xoaDanhMuc(id) {
+        if (!confirm("Bạn có chắc chắn muốn xóa danh mục này không?")) {
+            return;
+        }
+
+        fetch("@Url.Action("XoaDanhMuc", "DanhMuc")", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ Id: id })
+        })
+        .then(response => response.text())
+        .then(data => {
+            document.getElementById("danhMucTable").innerHTML = data;
+            alert("Xóa danh mục thành công!");
+        })
+        .catch(error => console.error("Lỗi:", error));
+    }
+</script>

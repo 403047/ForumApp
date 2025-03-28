@@ -1,0 +1,24 @@
+﻿@model IEnumerable<ForumApp.Models.Category>
+
+<table class="table table-bordered">
+    <thead class="table-dark">
+        <tr>
+            <th>ID</th>
+            <th>Tên danh mục</th>
+            <th>Hành động</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>@item.Id</td>
+                <td>@item.Name</td>
+                <td>
+                    <button class="btn btn-warning btn-sm" onclick="suaDanhMuc(@item.Id)">Sửa</button>
+                    <button class="btn btn-danger btn-sm" onclick="xoaDanhMuc(@item.Id)">Xóa</button>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
