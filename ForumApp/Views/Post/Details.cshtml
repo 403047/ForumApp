@@ -2,6 +2,9 @@
 
 @{
     ViewData["Title"] = Model.Title;
+    // Xử lý giá trị UserId và TotalPages trong Razor để đảm bảo JavaScript nhận được giá trị hợp lệ
+    var userId = Context.Session.GetInt32("UserId") ?? 0;
+    var totalPages = Model.TotalPages ?? 1;
 }
 
 <div class="container mt-4">
@@ -14,62 +17,54 @@
                 <p class="mb-1"><strong>Người đăng:</strong> @Model.User?.Username</p>
                 <p class="mb-1"><strong>Ngày đăng:</strong> @Model.CreatedAt.ToString("dd/MM/yyyy")</p>
                 <p class="mb-1"><strong>Danh mục:</strong> @Model.Category?.Name</p>
+
+                @if (Model.Type == "Trả phí")
+                {
+                    <div class="mb-3">
+                        <p><strong>Loại bài viết:</strong> <span class="text-danger">Trả phí</span></p>
+                        <p><strong>Giá:</strong> @(Model.CurrentPrice != null ? Model.CurrentPrice + " VNĐ" : "Chưa có thông tin")</p>
+
+                        @if (!string.IsNullOrEmpty(Model.User?.QRImagePath))
+                        {
+                            <p><strong>Quét mã QR để thanh toán:</strong></p>
+                            <img src='@Url.Content("~/uploads/" + Model.User.QRImagePath)'
+                                 alt="QR Code"
+                                 class="img-fluid"
+                                 style="max-width:200px;" />
+                        }
+                        else
+                        {
+                            <p class="text-danger"><strong>Người đăng chưa cập nhật mã QR!</strong></p>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <p><strong>Loại bài viết:</strong> Miễn phí</p>
+                }
             </div>
-
-            @if (Model.Type == "Trả phí")
-            {
-                <div class="mb-3">
-                    <p class="mb-1">
-                        <strong>Loại bài viết:</strong>
-                        <span class="text-danger">Trả phí</span>
-                    </p>
-                    @if (Model.CurrentPrice != null)
-                    {
-                        <p class="mb-1">
-                            <strong>Giá:</strong> @Model.CurrentPrice VNĐ
-                        </p>
-                    }
-                    else
-                    {
-                        <p class="mb-1">
-                            <strong>Giá:</strong> Chưa có thông tin
-                        </p>
-                    }
-
-                    @if (!string.IsNullOrEmpty(Model.User?.QRImagePath))
-                    {
-                        <p class="mb-1"><strong>Quét mã QR để thanh toán:</strong></p>
-                        <img src='@Url.Content("~/uploads/" + Model.User.QRImagePath)'
-                             alt="QR Code"
-                             class="img-fluid"
-                             style="max-width:200px;" />
-                    }
-                    else
-                    {
-                        <p class="text-danger"><strong>Người đăng chưa cập nhật mã QR!</strong></p>
-                    }
-                </div>
-            }
-            else
-            {
-                <p class="mb-3"><strong>Loại bài viết:</strong> Miễn phí</p>
-            }
 
             @if (!string.IsNullOrEmpty(Model.FilePath))
             {
                 <div class="mb-3">
                     <h3>Nội dung bài viết:</h3>
 
-                    <!-- Nút mở/tải file Word gốc (tùy ý giữ hoặc bỏ) -->
                     <div class="mb-2">
                         <a href='@Url.Content(Model.FilePath)'
                            target="_blank"
                            class="btn btn-primary me-2">
-                            Mở file Word gốc
+                            Tải nội dung
                         </a>
+
+                        <!-- Nút Bookmark -->
+                        <button class="btn btn-outline-warning bookmark-btn"
+                                data-post-id="@Model.Id"
+                                data-bookmarked="@ViewBag.IsBookmarked.ToString().ToLower()">
+                            <i class="fas fa-bookmark"></i>
+                        </button>
                     </div>
 
-                    <!-- Hiển thị nội dung file Word theo trang -->
+                    <!-- Hiển thị nội dung file Word -->
                     <div>
                         <iframe id="wordContentFrame"
                                 src="@Url.Action("ViewWordContent", "Post", new { id = Model.Id, pageNumber = 1 })"
@@ -83,8 +78,7 @@
                             <button class="btn btn-info btn-sm me-2" onclick="prevPage()">Trang trước</button>
                             <button class="btn btn-info btn-sm" onclick="nextPage()">Trang sau</button>
                             <span class="ms-3">
-                                Trang hiện tại:
-                                <span id="currentPage">1</span> / @Model.TotalPages
+                                Trang hiện tại: <span id="currentPage">1</span> / @Model.TotalPages
                             </span>
                         </div>
                     }
@@ -118,8 +112,51 @@
 
 @section Scripts {
     <script>
-        // Xử lý gửi đánh giá
         $(document).ready(function () {
+            // Cập nhật trạng thái nút Bookmark khi load trang
+            $(".bookmark-btn").each(function () {
+                var isBookmarked = $(this).data("bookmarked") === "true";
+                if (isBookmarked) {
+                    $(this).addClass("btn-warning").removeClass("btn-outline-warning");
+                }
+            });
+
+            // Xử lý sự kiện Bookmark
+            $(".bookmark-btn").click(function () {
+                var postId = $(this).data("post-id");
+                var $btn = $(this);
+                var userId = @userId;
+                if (userId === 0) {
+                    alert("Bạn cần đăng nhập để sử dụng tính năng Bookmark!");
+                    window.location.href = "/Account/Login";
+                    return;
+                }
+
+                $.ajax({
+                    url: "/Bookmark/AddOrRemove",
+                    type: "POST",
+                    data: { postId: postId },
+                    success: function (response) {
+                        console.log("Response:", response);
+                        if (response && response.success !== undefined) {
+                            alert(response.message);
+                            if (response.bookmarked) {
+                                $btn.addClass("btn-warning").removeClass("btn-outline-warning");
+                            } else {
+                                $btn.addClass("btn-outline-warning").removeClass("btn-warning");
+                            }
+                        } else {
+                            alert("Lỗi phản hồi từ server!");
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        console.error("Lỗi AJAX:", xhr, status, error);
+                        alert("Không thể kết nối đến server! Vui lòng thử lại.");
+                    }
+                });
+            });
+
+            // Xử lý đánh giá
             $("#submit-rating").click(function () {
                 var postId = $(this).data("post-id");
                 var rating = $("#rating-value").val();
@@ -133,9 +170,8 @@
             });
         });
 
-        // =============== CODE THÊM CHUYỂN TRANG WORD ===============
         var currentPage = 1;
-        var totalPages = @Model.TotalPages ?? 1; // nếu null thì gán 1
+        var totalPages = @totalPages;
 
         function updateFrame() {
             var url = '@Url.Action("ViewWordContent", "Post")?id=@Model.Id&pageNumber=' + currentPage;
@@ -156,6 +192,5 @@
                 updateFrame();
             }
         }
-        // ===========================================================
     </script>
 }

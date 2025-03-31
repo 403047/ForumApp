@@ -24,5 +24,8 @@ namespace ForumApp.Models
 
         // Đường dẫn ảnh QR (có thể null)
         public string? QRImagePath { get; set; }
+
+        // Trạng thái tài khoản (mặc định là true - kích hoạt)
+        public bool Status { get; set; } = true;
     }
 }

@@ -27,12 +27,25 @@ namespace ForumApp.Controllers
             _webHostEnvironment = webHostEnvironment;
         }
 
-        // View chính: load giao diện rỗng, dữ liệu sẽ được tải qua Ajax
+        // Kiểm tra danh mục trước khi load Index.
         public IActionResult Index()
         {
+            if (!_context.Categories.Any())
+            {
+                TempData["ErrorMessage"] = "Chưa có danh mục. Vui lòng thêm danh mục trước!";
+                return RedirectToAction("Index", "Category");
+            }
             return View();
         }
-
+        // Action trả về danh sách danh mục dưới dạng JSON (thêm vào PostController)
+        [HttpGet]
+        public IActionResult GetCategories()
+        {
+            var categories = _context.Categories
+                .Select(c => new { id = c.Id, name = c.Name })
+                .ToList();
+            return Json(categories);
+        }
         // Action trả về danh sách bài viết đã được duyệt dưới dạng JSON
         [HttpGet]
         public async Task<IActionResult> GetApprovedPosts()
@@ -54,47 +67,41 @@ namespace ForumApp.Controllers
                 Username = p.User != null ? p.User.Username : "Không xác định",
                 CreatedAt = p.CreatedAt.ToString("dd/MM/yyyy"),
                 TotalRating = p.TotalRating.ToString("0.0"),
-                Price = p.CurrentPrice.HasValue ? p.CurrentPrice.Value.ToString("0.00") + " VNĐ" : "Miễn phí"
+                Price = p.CurrentPrice.HasValue ? p.CurrentPrice.Value.ToString("0.00") + " VNĐ" : "Miễn phí",
+                CategoryId = p.Category != null ? p.Category.Id.ToString() : ""  // Thêm dòng này
             });
+
 
             return Json(postDtos);
         }
 
         // Action hiển thị chi tiết bài viết
-        public async Task<IActionResult> Details(int id)
+        public IActionResult Details(int id)
         {
-            var post = await _context.Posts
-                .Include(p => p.Category)
+            var userId = HttpContext.Session.GetInt32("UserId"); // Lấy ID người dùng từ session
+
+            var post = _context.Posts
                 .Include(p => p.User)
-                .Include(p => p.Ratings)
-                .Include(p => p.PostPrices)
-                .FirstOrDefaultAsync(p => p.Id == id);
+                .Include(p => p.Category)
+                .FirstOrDefault(p => p.Id == id);
 
             if (post == null)
-                return NotFound();
-
-            // Nếu có FilePath, có thể đọc file Word để gán số trang (nếu cần hiển thị theo trang)
-            if (!string.IsNullOrEmpty(post.FilePath))
             {
-                var filePath = Path.Combine(_webHostEnvironment.WebRootPath, post.FilePath.TrimStart('/'));
-                if (System.IO.File.Exists(filePath))
-                {
-                    try
-                    {
-                        Document doc = new Document(filePath);
-                        // Giả sử bạn có thêm thuộc tính TotalPages (NotMapped) trong Post.cs
-                        post.TotalPages = doc.PageCount;
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Lỗi khi đếm trang Word: {Message}", ex.Message);
-                        post.TotalPages = null;
-                    }
-                }
+                return NotFound();
             }
+
+            // Kiểm tra xem người dùng hiện tại có bookmark bài viết này không
+            bool isBookmarked = false;
+            if (userId.HasValue)
+            {
+                isBookmarked = _context.BookMarks.Any(b => b.UserId == userId && b.PostId == id);
+            }
+
+            ViewBag.IsBookmarked = isBookmarked; // Truyền giá trị vào ViewBag
 
             return View(post);
         }
+
 
         // Action dùng để hiển thị nội dung file Word theo trang (chuyển trang nếu có nhiều trang)
         [HttpGet]

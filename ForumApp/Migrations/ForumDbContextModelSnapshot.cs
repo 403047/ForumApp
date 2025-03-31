@@ -22,6 +22,24 @@ namespace ForumApp.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("ForumApp.Models.BookMark", b =>
+                {
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PostId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Id")
+                        .HasColumnType("int");
+
+                    b.HasKey("UserId", "PostId");
+
+                    b.HasIndex("PostId");
+
+                    b.ToTable("BookMarks");
+                });
+
             modelBuilder.Entity("ForumApp.Models.Category", b =>
                 {
                     b.Property<int>("Id")
@@ -179,6 +197,11 @@ namespace ForumApp.Migrations
                     b.Property<string>("QRImagePath")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<bool>("Status")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
                     b.Property<string>("Username")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -189,6 +212,25 @@ namespace ForumApp.Migrations
                     b.HasIndex("IdRole");
 
                     b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("ForumApp.Models.BookMark", b =>
+                {
+                    b.HasOne("ForumApp.Models.Post", "Post")
+                        .WithMany()
+                        .HasForeignKey("PostId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ForumApp.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Post");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("ForumApp.Models.Post", b =>
@@ -245,7 +287,7 @@ namespace ForumApp.Migrations
                     b.HasOne("ForumApp.Models.Role", "Role")
                         .WithMany()
                         .HasForeignKey("IdRole")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Role");

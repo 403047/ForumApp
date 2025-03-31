@@ -1,0 +1,75 @@
+﻿@model ForumApp.Models.User
+
+@{
+    ViewData["Title"] = "Sửa thông tin tài khoản";
+}
+
+<div class="container mt-4">
+    <h2 class="mb-4 text-center">Sửa thông tin tài khoản</h2>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success">
+            @TempData["SuccessMessage"]
+        </div>
+    }
+
+    <form asp-action="Update" asp-controller="SuaThongTin" method="post" enctype="multipart/form-data">
+        <div class="mb-3">
+            <label asp-for="Email" class="form-label">Email</label>
+            <input asp-for="Email" class="form-control" />
+            <span asp-validation-for="Email" class="text-danger"></span>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Ảnh QR</label>
+            <input type="file" name="qrImage" class="form-control" />
+            @if (!string.IsNullOrEmpty(Model.QRImagePath))
+            {
+                <div class="mt-2">
+                    <img src='@Url.Content(Model.QRImagePath)' alt="QR Image" class="img-fluid" style="max-width:200px;" />
+                </div>
+            }
+        </div>
+
+        <button type="submit" class="btn btn-primary">Cập nhật</button>
+        <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#changePasswordModal">
+            Đổi mật khẩu
+        </button>
+    </form>
+</div>
+
+<!-- Modal đổi mật khẩu -->
+<div class="modal fade" id="changePasswordModal" tabindex="-1" aria-labelledby="changePasswordModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form asp-action="ChangePassword" asp-controller="SuaThongTin" method="post">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="changePasswordModalLabel">Đổi mật khẩu</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="oldPassword" class="form-label">Mật khẩu cũ</label>
+                        <input type="password" name="oldPassword" id="oldPassword" class="form-control" required />
+                    </div>
+                    <div class="mb-3">
+                        <label for="newPassword" class="form-label">Mật khẩu mới</label>
+                        <input type="password" name="newPassword" id="newPassword" class="form-control" required />
+                    </div>
+                    <div class="mb-3">
+                        <label for="confirmPassword" class="form-label">Xác nhận mật khẩu mới</label>
+                        <input type="password" name="confirmPassword" id="confirmPassword" class="form-control" required />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                    <button type="submit" class="btn btn-primary">Đổi mật khẩu</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ForumApp.Migrations
 {
     [DbContext(typeof(ForumDbContext))]
-    [Migration("20250319133428_FixCascadeIssue")]
-    partial class FixCascadeIssue
+    [Migration("20250331090603_Update")]
+    partial class Update
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -24,6 +24,24 @@ namespace ForumApp.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
+
+            modelBuilder.Entity("ForumApp.Models.BookMark", b =>
+                {
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PostId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Id")
+                        .HasColumnType("int");
+
+                    b.HasKey("UserId", "PostId");
+
+                    b.HasIndex("PostId");
+
+                    b.ToTable("BookMarks");
+                });
 
             modelBuilder.Entity("ForumApp.Models.Category", b =>
                 {
@@ -54,9 +72,6 @@ namespace ForumApp.Migrations
                     b.Property<int>("CategoryId")
                         .HasColumnType("int");
 
-                    b.Property<string>("Content")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime2")
@@ -64,9 +79,6 @@ namespace ForumApp.Migrations
 
                     b.Property<string>("FilePath")
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<decimal?>("Price")
-                        .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -78,9 +90,6 @@ namespace ForumApp.Migrations
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
-
-                    b.Property<decimal?>("TotalRating")
-                        .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("Type")
                         .IsRequired()
@@ -98,6 +107,32 @@ namespace ForumApp.Migrations
                     b.ToTable("Posts");
                 });
 
+            modelBuilder.Entity("ForumApp.Models.PostPrice", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("PostId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("Price")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETDATE()");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PostId");
+
+                    b.ToTable("PostPrices");
+                });
+
             modelBuilder.Entity("ForumApp.Models.Rating", b =>
                 {
                     b.Property<int>("Id")
@@ -109,9 +144,6 @@ namespace ForumApp.Migrations
                     b.Property<int>("PostId")
                         .HasColumnType("int");
 
-                    b.Property<int?>("PostId1")
-                        .HasColumnType("int");
-
                     b.Property<int>("Stars")
                         .HasColumnType("int");
 
@@ -121,8 +153,6 @@ namespace ForumApp.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("PostId");
-
-                    b.HasIndex("PostId1");
 
                     b.HasIndex("UserId");
 
@@ -170,6 +200,11 @@ namespace ForumApp.Migrations
                     b.Property<string>("QRImagePath")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<bool>("Status")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
                     b.Property<string>("Username")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -180,6 +215,25 @@ namespace ForumApp.Migrations
                     b.HasIndex("IdRole");
 
                     b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("ForumApp.Models.BookMark", b =>
+                {
+                    b.HasOne("ForumApp.Models.Post", "Post")
+                        .WithMany()
+                        .HasForeignKey("PostId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ForumApp.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Post");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("ForumApp.Models.Post", b =>
@@ -201,17 +255,24 @@ namespace ForumApp.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("ForumApp.Models.Rating", b =>
+            modelBuilder.Entity("ForumApp.Models.PostPrice", b =>
                 {
                     b.HasOne("ForumApp.Models.Post", "Post")
-                        .WithMany()
+                        .WithMany("PostPrices")
                         .HasForeignKey("PostId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("ForumApp.Models.Post", null)
+                    b.Navigation("Post");
+                });
+
+            modelBuilder.Entity("ForumApp.Models.Rating", b =>
+                {
+                    b.HasOne("ForumApp.Models.Post", "Post")
                         .WithMany("Ratings")
-                        .HasForeignKey("PostId1");
+                        .HasForeignKey("PostId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("ForumApp.Models.User", "User")
                         .WithMany()
@@ -229,7 +290,7 @@ namespace ForumApp.Migrations
                     b.HasOne("ForumApp.Models.Role", "Role")
                         .WithMany()
                         .HasForeignKey("IdRole")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Role");
@@ -242,6 +303,8 @@ namespace ForumApp.Migrations
 
             modelBuilder.Entity("ForumApp.Models.Post", b =>
                 {
+                    b.Navigation("PostPrices");
+
                     b.Navigation("Ratings");
                 });
 #pragma warning restore 612, 618

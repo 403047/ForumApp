@@ -2,7 +2,6 @@
     Layout = "_Layout";
 }
 
-
 <!DOCTYPE html>
 <html>
 <head>
@@ -12,9 +11,20 @@
 </head>
 <body>
     <div class="container mt-4">
+        <div class="d-flex justify-content-between mb-3">
+            <input type="text" id="searchInput" class="form-control w-50" placeholder="Tìm kiếm theo tiêu đề hoặc tác giả" onkeyup="filterTable()">
+            <select id="categorySelect" class="form-select w-25" onchange="filterCategory()">
+                <option value="all">Tất cả danh mục</option>
+            </select>
+            <select id="sortSelect" class="form-select w-25" onchange="sortTable()">
+                <option value="date">Sắp xếp theo: Ngày đăng mới nhất</option>
+                <option value="title">Theo chữ cái</option>
+                <option value="rating">Theo đánh giá</option>
+            </select>
+        </div>
         <div class="card shadow-sm">
             <div class="card-header bg-primary text-white">
-                <h3 class="card-title mb-0">Danh sách bài viết đã duyệt</h3>
+                <h3 class="card-title mb-0">Danh sách các bài viết</h3>
             </div>
             <div class="card-body p-0">
                 <table id="postsTable" class="table table-striped table-hover mb-0">
@@ -38,6 +48,28 @@
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script>
         $(document).ready(function () {
+            loadCategories();
+            loadPosts();
+        });
+
+        function loadCategories() {
+            $.ajax({
+                url: '@Url.Action("GetCategories", "Post")',
+                type: 'GET',
+                dataType: 'json',
+                success: function (categories) {
+                    var categorySelect = $('#categorySelect');
+                    categories.forEach(category => {
+                        categorySelect.append(new Option(category.name, category.id));
+                    });
+                },
+                error: function (xhr, status, error) {
+                    console.error("Lỗi khi lấy danh mục:", error);
+                }
+            });
+        }
+
+        function loadPosts() {
             $.ajax({
                 url: '@Url.Action("GetApprovedPosts", "Post")',
                 type: 'GET',
@@ -45,25 +77,69 @@
                 success: function (data) {
                     var tbody = $('#postsTable tbody');
                     tbody.empty();
-        $.each(data, function (i, post) {
-            tbody.append(
-                '<tr>' +
-                    // Chú ý tên property trùng với JSON trả về
-                    '<td><a href="@Url.Action("Details", "Post")?id=' + post.id + '">' + post.title + '</a></td>' +
-                    '<td>' + post.username + '</td>' +
-                    '<td>' + post.createdAt + '</td>' +
-                    '<td>' + post.totalRating + '</td>' +
-                    '<td>' + post.price + '</td>' +
-                '</tr>'
-            );
-        });
-
+                    $.each(data, function (i, post) {
+                        tbody.append(
+                            '<tr data-category="' + post.categoryId + '">' +
+                                '<td><a href="@Url.Action("Details", "Post")?id=' + post.id + '">' + post.title + '</a></td>' +
+                                '<td>' + post.username + '</td>' +
+                                '<td>' + post.createdAt + '</td>' +
+                                '<td>' + post.totalRating + '</td>' +
+                                '<td>' + post.price + '</td>' +
+                            '</tr>'
+                        );
+                    });
                 },
                 error: function (xhr, status, error) {
                     console.error("Lỗi khi lấy dữ liệu:", error);
                 }
             });
-        });
+        }
+
+        function filterTable() {
+            let input = document.getElementById("searchInput").value.toLowerCase();
+            let rows = document.querySelectorAll("#postsTable tbody tr");
+            rows.forEach(row => {
+                let title = row.cells[0]?.textContent.toLowerCase() || "";
+                let author = row.cells[1]?.textContent.toLowerCase() || "";
+                row.style.display = (title.includes(input) || author.includes(input)) ? "" : "none";
+            });
+        }
+
+        function filterCategory() {
+            let category = document.getElementById("categorySelect").value;
+            console.log("Selected category:", category);
+            let rows = document.querySelectorAll("#postsTable tbody tr");
+            rows.forEach(row => {
+                let postCategory = row.getAttribute("data-category") || "";
+                console.log("Row category:", postCategory);
+                row.style.display = (category === "all" || String(postCategory) === String(category)) ? "" : "none";
+            });
+        }
+
+
+
+        function sortTable() {
+            let select = document.getElementById("sortSelect").value;
+            let table = document.getElementById("postsTable").getElementsByTagName("tbody")[0];
+            let rows = Array.from(table.getElementsByTagName("tr"));
+            rows.sort((a, b) => {
+                let valA, valB;
+                if (select === "date") {
+                    valA = new Date(a.cells[2]?.textContent || "");
+                    valB = new Date(b.cells[2]?.textContent || "");
+                    return valB - valA;
+                } else if (select === "title") {
+                    valA = a.cells[0]?.textContent.toLowerCase() || "";
+                    valB = b.cells[0]?.textContent.toLowerCase() || "";
+                    return valA.localeCompare(valB);
+                } else if (select === "rating") {
+                    valA = parseFloat(a.cells[3]?.textContent) || 0;
+                    valB = parseFloat(b.cells[3]?.textContent) || 0;
+                    return valB - valA;
+                }
+            });
+            rows.forEach(row => table.appendChild(row));
+        }
     </script>
 </body>
 </html>

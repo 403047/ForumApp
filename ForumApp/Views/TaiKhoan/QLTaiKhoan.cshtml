@@ -1,0 +1,85 @@
+﻿@{
+    ViewData["Title"] = "Quản lý tài khoản";
+}
+
+<!-- Tiêu đề -->
+<h2 class="text-center my-4">Quản lý Tài Khoản</h2>
+
+<!-- Ô tìm kiếm -->
+<div class="input-group mb-3 w-50 mx-auto">
+    <input type="text" id="searchUser" class="form-control" placeholder="Nhập tên người dùng để tìm kiếm">
+    <button class="btn btn-primary" id="btnSearch">Tìm</button>
+</div>
+
+<!-- Bảng danh sách tài khoản -->
+<table class="table table-bordered table-striped text-center">
+    <thead class="table-dark">
+        <tr>
+            <th>ID</th>
+            <th>Tên người dùng</th>
+            <th>Vai trò</th>
+            <th>Trạng thái</th>
+            <th>Hành động</th>
+        </tr>
+    </thead>
+    <tbody id="userTable">
+        @foreach (var user in Model)
+        {
+            <tr>
+                <td>@user.Id</td>
+                <td>@user.Username</td>
+                <td>
+                    <select class="form-select role-select" data-id="@user.Id">
+                        <option value="1" selected="@(user.RoleName == "User" ? "selected" : null)">User</option>
+                        <option value="2" selected="@(user.RoleName == "Admin" ? "selected" : null)">Admin</option>
+                    </select>
+                </td>
+                <td>
+                    <select class="form-select status-select" data-id="@user.Id">
+                        <option value="true" selected="@(user.Status == "Active" ? "selected" : null)">Active</option>
+                        <option value="false" selected="@(user.Status == "Inactive" ? "selected" : null)">Inactive</option>
+                    </select>
+                </td>
+                <td>
+                    <button class="btn btn-success btn-sm update-user" data-id="@user.Id">
+                        <i class="bi bi-save"></i> Cập nhật
+                    </button>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            // Xử lý tìm kiếm
+            $("#btnSearch").click(function () {
+                var searchTerm = $("#searchUser").val();
+                $.get("@Url.Action("Index", "TaiKhoan")", { searchTerm: searchTerm }, function (data) {
+                    $("#userTable").html($(data).find("#userTable").html());
+                });
+            });
+
+            // Xử lý cập nhật thông tin người dùng
+            $(document).on("click", ".update-user", function () {
+                var userId = $(this).data("id");
+                var newRole = $(".role-select[data-id='" + userId + "']").val();
+                var newStatus = $(".status-select[data-id='" + userId + "']").val() === "true";
+
+                $.ajax({
+                    url: "@Url.Action("UpdateUser", "TaiKhoan")",
+                    type: "POST",
+                    contentType: "application/json",
+                    data: JSON.stringify({ Id: userId, IdRole: newRole, Status: newStatus }),
+                    success: function (response) {
+                        alert(response.message);
+                    },
+                    error: function () {
+                        alert("Có lỗi xảy ra, vui lòng thử lại!");
+                    }
+                });
+            });
+        });
+    </script>
+}

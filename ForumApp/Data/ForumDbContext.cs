@@ -13,6 +13,7 @@ namespace ForumApp.Data
         public DbSet<Role> Roles { get; set; }
         public DbSet<Rating> Ratings { get; set; }
         public DbSet<PostPrice> PostPrices { get; set; }
+        public DbSet<BookMark> BookMarks { get; set; } // Thêm BookMark
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -25,6 +26,13 @@ namespace ForumApp.Data
                 entity.Property(u => u.Username).IsRequired().HasMaxLength(100);
                 entity.Property(u => u.Email).IsRequired().HasMaxLength(150);
                 entity.Property(u => u.Password).IsRequired();
+                entity.Property(u => u.QRImagePath).IsRequired(false);
+                entity.Property(u => u.Status).HasDefaultValue(true);
+
+                entity.HasOne(u => u.Role)
+                      .WithMany()
+                      .HasForeignKey(u => u.IdRole)
+                      .OnDelete(DeleteBehavior.Restrict);
             });
 
             // Cấu hình bảng Category
@@ -39,14 +47,10 @@ namespace ForumApp.Data
             {
                 entity.HasKey(p => p.Id);
                 entity.Property(p => p.Title).IsRequired().HasMaxLength(200);
-                // Đã xóa thuộc tính Content trong model nên xóa cấu hình này:
-                // entity.Property(p => p.Content).IsRequired(false);
                 entity.Property(p => p.FilePath).IsRequired(false);
                 entity.Property(p => p.CreatedAt).HasDefaultValueSql("GETDATE()");
                 entity.Property(p => p.Type).IsRequired();
                 entity.Property(p => p.Status).HasDefaultValue("Chờ duyệt");
-
-                // Không cần cấu hình TotalRating vì nó được đánh dấu [NotMapped] trong model
 
                 entity.HasOne(p => p.Category)
                       .WithMany(c => c.Posts)
@@ -86,6 +90,22 @@ namespace ForumApp.Data
                 entity.HasOne(pp => pp.Post)
                       .WithMany(p => p.PostPrices)
                       .HasForeignKey(pp => pp.PostId)
+                      .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // Cấu hình bảng BookMark
+            modelBuilder.Entity<BookMark>(entity =>
+            {
+                entity.HasKey(bm => new { bm.UserId, bm.PostId }); 
+
+                entity.HasOne(bm => bm.User)
+                      .WithMany()
+                      .HasForeignKey(bm => bm.UserId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(bm => bm.Post)
+                      .WithMany()
+                      .HasForeignKey(bm => bm.PostId)
                       .OnDelete(DeleteBehavior.Cascade);
             });
         }

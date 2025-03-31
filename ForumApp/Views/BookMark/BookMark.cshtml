@@ -1,0 +1,50 @@
+﻿@model List<ForumApp.Models.Post>
+
+@{
+    ViewData["Title"] = "Danh sách bài viết đã bookmark";
+}
+
+<div class="container mt-4">
+    <h2 class="mb-4 text-center">Danh sách bài viết đã bookmark</h2>
+
+    @if (Model != null && Model.Any())
+    {
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Tiêu đề</th>
+                        <th>Danh mục</th>
+                        <th>Ngày tạo</th>
+                    </tr>
+                </thead>
+                <tbody id="bookmark-list">
+                    @foreach (var post in Model)
+                    {
+                        <tr>
+                            <td>
+                                <a href="@Url.Action("Details", "Post", new { id = post.Id })" class="text-decoration-none">
+                                    @post.Title
+                                </a>
+                            </td>
+                            <td>@(post.Category?.Name ?? "Không có danh mục")</td>
+                            <td>@post.CreatedAt.ToString("dd/MM/yyyy")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-warning" role="alert">
+            Bạn chưa bookmark bài viết nào.
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        // Hiện tại không cần xử lý sự kiện nào do cột thao tác đã được loại bỏ.
+    </script>
+}
