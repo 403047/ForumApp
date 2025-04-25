@@ -37,7 +37,8 @@ namespace ForumApp.Controllers
             }
             return View();
         }
-        // Action trả về danh sách danh mục dưới dạng JSON (thêm vào PostController)
+
+        // Action trả về danh sách danh mục dưới dạng JSON (không thay đổi)
         [HttpGet]
         public IActionResult GetCategories()
         {
@@ -46,7 +47,8 @@ namespace ForumApp.Controllers
                 .ToList();
             return Json(categories);
         }
-        // Action trả về danh sách bài viết đã được duyệt dưới dạng JSON
+
+        // Action trả về danh sách bài viết đã được duyệt dưới dạng JSON, tính giá dựa trên PostPrice
         [HttpGet]
         public async Task<IActionResult> GetApprovedPosts()
         {
@@ -59,18 +61,23 @@ namespace ForumApp.Controllers
                 .OrderByDescending(p => p.CreatedAt)
                 .ToListAsync();
 
-            // Lưu ý: mặc định JSON serializer của ASP.NET Core chuyển sang camelCase nên ở JS cần dùng tên thuộc tính viết thường.
             var postDtos = posts.Select(p => new
             {
                 p.Id,
                 p.Title,
+                type = p.Type != null ? p.Type.Trim() : "",
+                userId = p.User != null ? p.User.Id : 0,
                 Username = p.User != null ? p.User.Username : "Không xác định",
                 CreatedAt = p.CreatedAt.ToString("dd/MM/yyyy"),
                 TotalRating = p.TotalRating.ToString("0.0"),
-                Price = p.CurrentPrice.HasValue ? p.CurrentPrice.Value.ToString("0.00") + " VNĐ" : "Miễn phí",
-                CategoryId = p.Category != null ? p.Category.Id.ToString() : ""  // Thêm dòng này
-            });
+                Price = (p.Type != null && p.Type.Trim().ToLower() == "trả phí" && p.PostPrices.Any())
+                     ? (p.PostPrices.OrderByDescending(pp => pp.Id).First().Price > 0
+                     ? string.Format("{0:N0}", p.PostPrices.OrderByDescending(pp => pp.Id).First().Price) + " VNĐ"
+                     : "Chưa có giá")
+                     : "Miễn phí",
 
+                CategoryId = p.Category != null ? p.Category.Id.ToString() : ""
+            });
 
             return Json(postDtos);
         }
@@ -80,9 +87,12 @@ namespace ForumApp.Controllers
         {
             var userId = HttpContext.Session.GetInt32("UserId"); // Lấy ID người dùng từ session
 
+            // Include Ratings to ensure the TotalRating property is populated
             var post = _context.Posts
                 .Include(p => p.User)
                 .Include(p => p.Category)
+                .Include(p => p.PostPrices)
+                .Include(p => p.Ratings)      // Add this line to load ratings
                 .FirstOrDefault(p => p.Id == id);
 
             if (post == null)
@@ -90,49 +100,47 @@ namespace ForumApp.Controllers
                 return NotFound();
             }
 
-            // Kiểm tra xem người dùng hiện tại có bookmark bài viết này không
+            decimal? gia = null;
+            if (post.Type != null && post.Type.Trim().ToLower() == "trả phí" && post.PostPrices.Any())
+            {
+                gia = post.PostPrices.OrderByDescending(pp => pp.Id).First().Price;
+            }
+            ViewBag.Price = gia ?? 0;
+
             bool isBookmarked = false;
             if (userId.HasValue)
             {
                 isBookmarked = _context.BookMarks.Any(b => b.UserId == userId && b.PostId == id);
             }
-
-            ViewBag.IsBookmarked = isBookmarked; // Truyền giá trị vào ViewBag
+            ViewBag.IsBookmarked = isBookmarked;
 
             return View(post);
         }
 
 
-        // Action dùng để hiển thị nội dung file Word theo trang (chuyển trang nếu có nhiều trang)
+        // Action hiển thị nội dung file Word theo trang
         [HttpGet]
         public async Task<IActionResult> ViewWordContent(int id, int pageNumber = 1)
         {
-            // Lấy bài viết theo id
             var post = await _context.Posts.FirstOrDefaultAsync(p => p.Id == id);
             if (post == null || string.IsNullOrEmpty(post.FilePath))
                 return NotFound("Bài viết không tồn tại hoặc không có file Word.");
 
-            // Lấy đường dẫn vật lý của file Word
             var filePath = Path.Combine(_webHostEnvironment.WebRootPath, post.FilePath.TrimStart('/'));
             if (!System.IO.File.Exists(filePath))
                 return NotFound("File Word không tồn tại trên server.");
 
             try
             {
-                // Đọc file Word bằng Aspose.Words
                 Document doc = new Document(filePath);
-
-                // Giới hạn pageNumber trong khoảng hợp lệ
                 if (pageNumber < 1)
                     pageNumber = 1;
                 if (pageNumber > doc.PageCount)
                     pageNumber = doc.PageCount;
 
-                // Tách ra 1 Document mới chỉ chứa 1 trang (sử dụng ExtractPages)
                 int pageIndex = pageNumber - 1;
                 Document singlePageDoc = doc.ExtractPages(pageIndex, 1);
 
-                // Tạo HtmlSaveOptions để xuất nội dung thành HTML
                 var saveOptions = new HtmlSaveOptions
                 {
                     ExportImagesAsBase64 = true
@@ -175,11 +183,22 @@ namespace ForumApp.Controllers
                 return View(post);
             }
 
+            // Kiểm tra nếu là bài viết trả phí thì người dùng phải có mã QR
+            if (!string.IsNullOrWhiteSpace(post.Type) && post.Type.Trim().ToLower() == "trả phí")
+            {
+                if (string.IsNullOrWhiteSpace(user.QRImagePath))
+                {
+                    ModelState.AddModelError("", "Người dùng chưa có mã QR.");
+                    ViewBag.Categories = _context.Categories.ToList();
+                    return View(post);
+                }
+            }
+
             post.UserId = user.Id;
             post.CreatedAt = DateTime.Now;
-            // Cho mục đích demo, đặt status là "Đã duyệt" (thông thường bài viết mới sẽ là "Chờ duyệt")
             post.Status = "Chờ duyệt";
 
+            // Nếu người dùng upload file
             if (file != null && file.Length > 0)
             {
                 try
@@ -196,7 +215,6 @@ namespace ForumApp.Controllers
                     {
                         await file.CopyToAsync(stream);
                     }
-
                     post.FilePath = "/uploads/" + fileName;
                 }
                 catch (Exception ex)
@@ -207,9 +225,8 @@ namespace ForumApp.Controllers
                     return View(post);
                 }
             }
-            else
+            else // Nếu người dùng nhập nội dung qua trình soạn thảo
             {
-                // Nếu không upload file, kiểm tra nội dung text được gửi qua form (để chuyển thành file Word)
                 var contentText = Request.Form["Content"].ToString();
                 if (!string.IsNullOrWhiteSpace(contentText))
                 {
@@ -223,12 +240,10 @@ namespace ForumApp.Controllers
 
                         Document doc = new Document();
                         DocumentBuilder builder = new DocumentBuilder(doc);
-                        builder.Write(contentText);
-
+                        builder.InsertHtml(contentText); // dùng InsertHtml để giữ định dạng nếu có
                         var fileName = Guid.NewGuid().ToString() + ".docx";
                         var filePath = Path.Combine(uploadsFolder, fileName);
                         doc.Save(filePath);
-
                         post.FilePath = "/uploads/" + fileName;
                     }
                     catch (Exception ex)
@@ -246,7 +261,8 @@ namespace ForumApp.Controllers
                 _context.Posts.Add(post);
                 await _context.SaveChangesAsync();
 
-                if (post.Type == "Trả phí" && Price.HasValue)
+                // Nếu là bài viết trả phí thì lưu giá
+                if (!string.IsNullOrWhiteSpace(post.Type) && post.Type.Trim().ToLower() == "trả phí" && Price.HasValue)
                 {
                     var postPrice = new PostPrice
                     {
@@ -275,6 +291,7 @@ namespace ForumApp.Controllers
             return View(post);
         }
 
+
         private string ExtractTextFromWord(string filePath)
         {
             try
@@ -286,6 +303,164 @@ namespace ForumApp.Controllers
             {
                 _logger.LogError(ex, "Lỗi khi trích xuất nội dung từ file Word.");
                 return "";
+            }
+        }
+
+        // ACTION ThanhToan: Tạo hóa đơn và chi tiết hóa đơn
+        // Controllers/PostController.cs
+        [HttpPost]
+        public async Task<IActionResult> ThanhToan(int postId, IFormFile minhChung)
+        {
+            var userId = HttpContext.Session.GetInt32("UserId");
+            if (userId == null)
+            {
+                return Json(new { success = false, message = "Bạn cần đăng nhập để thanh toán." });
+            }
+
+            var post = await _context.Posts
+                .Include(p => p.PostPrices)
+                .Include(p => p.User)             // cần để lấy QRImagePath
+                .FirstOrDefaultAsync(p => p.Id == postId);
+
+            if (post == null || post.Type.Trim().ToLower() != "trả phí")
+            {
+                return Json(new { success = false, message = "Bài viết không hợp lệ hoặc không cần thanh toán." });
+            }
+
+            // Nếu là tác giả, chuyển luôn sang Details mà không tạo/update hóa đơn
+            if (post.UserId == userId)
+            {
+                return RedirectToAction("Details", new { id = postId });
+            }
+
+            if (minhChung == null || minhChung.Length == 0)
+            {
+                return Json(new { success = false, message = "Vui lòng tải lên ảnh minh chứng thanh toán." });
+            }
+
+            // Lưu ảnh minh chứng
+            string minhChungPath;
+            try
+            {
+                var uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "minhchung");
+                if (!Directory.Exists(uploadsFolder))
+                    Directory.CreateDirectory(uploadsFolder);
+
+                var fileName = Guid.NewGuid() + Path.GetExtension(minhChung.FileName);
+                var filePath = Path.Combine(uploadsFolder, fileName);
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                    await minhChung.CopyToAsync(stream);
+
+                minhChungPath = "/minhchung/" + fileName;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi lưu ảnh minh chứng.");
+                return Json(new { success = false, message = "Lỗi khi lưu ảnh minh chứng." });
+            }
+
+            try
+            {
+                // Kiểm tra ChiTietHoaDon đang chờ xác thực
+                var existing = await _context.ChiTietHoaDons
+                    .Include(ct => ct.HoaDon)
+                    .Where(ct => ct.IdUser == userId && ct.IdPost == postId && ct.HoaDon.Status == "Chờ xác thực")
+                    .FirstOrDefaultAsync();
+
+                if (existing != null)
+                {
+                    // Cập nhật lại minh chứng và QR
+                    existing.MinhChung = minhChungPath;
+                    existing.QRImagePath = post.User.QRImagePath;
+                    await _context.SaveChangesAsync();
+
+                    return Json(new { success = true, message = "Cập nhật ảnh minh chứng thành công. Đang chờ xác thực." });
+                }
+                else
+                {
+                    // Tạo mới HoaDon
+                    var hoaDon = new HoaDon
+                    {
+                        Status = "Chờ xác thực",
+                        AuthenticationTimes = 0
+                    };
+                    _context.HoaDons.Add(hoaDon);
+                    await _context.SaveChangesAsync();
+
+                    // Lấy giá mới nhất
+                    var gia = post.PostPrices
+                                .OrderByDescending(pp => pp.Id)
+                                .FirstOrDefault()?.Price ?? 0;
+
+                    // Tạo ChiTietHoaDon mới với cả MinhChung và QR của chủ bài
+                    var chiTiet = new ChiTietHoaDon
+                    {
+                        IdHoaDon = hoaDon.Id,
+                        IdPost = post.Id,
+                        IdUser = userId.Value,
+                        Gia = gia,
+                        MinhChung = minhChungPath,
+                        QRImagePath = post.User.QRImagePath
+                    };
+                    _context.ChiTietHoaDons.Add(chiTiet);
+                    await _context.SaveChangesAsync();
+
+                    return Json(new { success = true, message = "Gửi thanh toán thành công. Đang chờ xác thực." });
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi lưu hóa đơn.");
+                return Json(new { success = false, message = "Lỗi khi tạo hóa đơn. Vui lòng thử lại." });
+            }
+        }
+
+
+        // ACTION CheckPaymentStatus: Kiểm tra trạng thái thanh toán của bài viết
+        [HttpPost]
+        public async Task<IActionResult> CheckPaymentStatus(int postId)
+        {
+            var userId = HttpContext.Session.GetInt32("UserId");
+            if (userId == null)
+                return Json(new { status = "", price = "", qr = "" });
+
+            var post = await _context.Posts
+                .Include(p => p.PostPrices)
+                .Include(p => p.User)
+                .FirstOrDefaultAsync(p => p.Id == postId);
+            if (post == null)
+                return Json(new { status = "", price = "", qr = "" });
+
+            string priceString = (post.Type != null && post.Type.Trim().ToLower() == "trả phí" && post.CurrentPrice.HasValue && post.CurrentPrice.Value > 0)
+                ? post.CurrentPrice.Value.ToString("N0") + " VNĐ"
+                : "Chưa có giá";
+            string qrImage = post.User?.QRImagePath ?? "";
+
+            // Nếu người dùng là tác giả, coi như đã trả phí
+            if (post.UserId == userId)
+            {
+                return Json(new { status = "Đã xác thực", price = priceString, qr = qrImage });
+            }
+
+            var chiTiet = await _context.ChiTietHoaDons
+                .Include(ct => ct.HoaDon)
+                .Where(ct => ct.IdUser == userId && ct.IdPost == postId)
+                .FirstOrDefaultAsync();
+
+            if (chiTiet != null)
+            {
+                if (chiTiet.HoaDon.Status == "Đã xác thực")
+                {
+                    return Json(new { status = "Đã xác thực", price = priceString, qr = qrImage });
+                }
+                else
+                {
+                    return Json(new { status = chiTiet.HoaDon.Status, price = priceString, minhChung = chiTiet.MinhChung, qr = qrImage });
+                }
+            }
+            else
+            {
+                return Json(new { status = "Chưa thanh toán", price = priceString, qr = qrImage });
             }
         }
     }

@@ -13,7 +13,9 @@ namespace ForumApp.Data
         public DbSet<Role> Roles { get; set; }
         public DbSet<Rating> Ratings { get; set; }
         public DbSet<PostPrice> PostPrices { get; set; }
-        public DbSet<BookMark> BookMarks { get; set; } // Thêm BookMark
+        public DbSet<BookMark> BookMarks { get; set; }
+        public DbSet<HoaDon> HoaDons { get; set; }
+        public DbSet<ChiTietHoaDon> ChiTietHoaDons { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -96,7 +98,7 @@ namespace ForumApp.Data
             // Cấu hình bảng BookMark
             modelBuilder.Entity<BookMark>(entity =>
             {
-                entity.HasKey(bm => new { bm.UserId, bm.PostId }); 
+                entity.HasKey(bm => new { bm.UserId, bm.PostId });
 
                 entity.HasOne(bm => bm.User)
                       .WithMany()
@@ -107,6 +109,48 @@ namespace ForumApp.Data
                       .WithMany()
                       .HasForeignKey(bm => bm.PostId)
                       .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // Cấu hình bảng HoaDon
+            modelBuilder.Entity<HoaDon>(entity =>
+            {
+                entity.HasKey(h => h.Id);
+                entity.Property(h => h.Status).IsRequired();
+                entity.Property(h => h.AuthenticationTimes).HasDefaultValue(0);
+
+                // Cấu hình DateSend mặc định bằng GETDATE() trên SQL Server
+                entity.Property(h => h.DateSend)
+                      .HasColumnType("datetime")
+                      .HasDefaultValueSql("GETDATE()");
+            });
+
+
+            // Cấu hình bảng ChiTietHoaDon (quan hệ 1-1 với HoaDon)
+            modelBuilder.Entity<ChiTietHoaDon>(entity =>
+            {
+                entity.HasKey(c => c.Id);
+                entity.Property(c => c.Gia).HasColumnType("decimal(18,2)").IsRequired();
+                entity.Property(c => c.MinhChung).HasMaxLength(255);
+
+                // **Bổ sung cấu hình cho QRImagePath**
+                entity.Property(c => c.QRImagePath)
+                      .HasMaxLength(255)
+                      .IsRequired(false);
+
+                entity.HasOne(c => c.HoaDon)
+                      .WithOne(h => h.ChiTietHoaDon)
+                      .HasForeignKey<ChiTietHoaDon>(c => c.IdHoaDon)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(c => c.Post)
+                      .WithMany()
+                      .HasForeignKey(c => c.IdPost)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(c => c.User)
+                      .WithMany()
+                      .HasForeignKey(c => c.IdUser)
+                      .OnDelete(DeleteBehavior.Restrict);
             });
         }
     }

@@ -54,6 +54,10 @@ namespace ForumApp.Controllers
             string sessionUserRole = HttpContext.Session.GetString("UserRole");
 
             Console.WriteLine($"Session UserId: {sessionUserId}, Session UserRole: {sessionUserRole}");
+            if (user.Role.RoleName.Equals("Admin", StringComparison.OrdinalIgnoreCase))
+            {
+                return RedirectToAction("Index", "GiaoDienAdmin");
+            }
 
             return RedirectToAction("Index", "Home");
         }

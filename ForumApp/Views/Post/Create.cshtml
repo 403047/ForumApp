@@ -10,6 +10,27 @@
             <h2 class="card-title mb-0">Đăng bài viết</h2>
         </div>
         <div class="card-body">
+            @if (!ViewData.ModelState.IsValid && ViewData.ModelState.Values.SelectMany(v => v.Errors).Any(e => e.ErrorMessage.Contains("mã QR")))
+            {
+                <div class="alert alert-danger">
+                    Người dùng chưa có mã QR.
+                </div>
+            }
+            else if (!ViewData.ModelState.IsValid)
+            {
+                <div class="alert alert-danger">
+                    <ul>
+                        @foreach (var modelState in ViewData.ModelState.Values)
+                        {
+                            foreach (var error in modelState.Errors)
+                            {
+                                <li>@error.ErrorMessage</li>
+                            }
+                        }
+                    </ul>
+                </div>
+            }
+
             <form asp-action="Create" method="post" enctype="multipart/form-data">
                 <div class="mb-3">
                     <label asp-for="Title" class="form-label">Tiêu đề</label>
@@ -24,18 +45,17 @@
                 <div class="mb-3">
                     <label class="form-label">Chọn cách nhập nội dung</label>
                     <div class="form-check">
-                        <input class="form-check-input" type="radio" name="ContentOption" value="text" id="contentText" required checked>
+                        <input class="form-check-input" type="radio" name="ContentOption" value="text" id="contentText" checked>
                         <label class="form-check-label" for="contentText">Nhập nội dung</label>
                     </div>
                     <div class="form-check">
-                        <input class="form-check-input" type="radio" name="ContentOption" value="file" id="contentFile" required>
+                        <input class="form-check-input" type="radio" name="ContentOption" value="file" id="contentFile">
                         <label class="form-check-label" for="contentFile">Tải file Word</label>
                     </div>
                 </div>
 
                 <div id="textEditor" class="mb-3">
                     <label class="form-label">Nội dung</label>
-                    <!-- Sử dụng name "Content" để gửi dữ liệu từ ô soạn thảo -->
                     <textarea name="Content" id="Content" class="form-control" rows="5"></textarea>
                 </div>
 
@@ -54,7 +74,7 @@
 
                 <div id="priceField" class="mb-3" style="display:none;">
                     <label class="form-label">Giá tiền</label>
-                    <input name="Price" type="number" class="form-control" min="0" step="1000" />
+                    <input name="Price" type="number" class="form-control" min="1000" step="1" />
                 </div>
 
                 <button type="submit" class="btn btn-primary">Đăng bài</button>
@@ -98,7 +118,6 @@
                 document.getElementById('priceField').style.display = (this.value === 'Trả phí') ? 'block' : 'none';
             });
 
-            // Trước khi submit, cập nhật nội dung của CKEditor vào textarea
             document.querySelector('form').addEventListener('submit', function () {
                 if (editorInstance) {
                     contentTextarea.value = editorInstance.getData();

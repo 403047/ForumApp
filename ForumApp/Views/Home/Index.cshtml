@@ -1,52 +1,63 @@
 ﻿@{
     Layout = "_Layout";
+    var currentUserId = Context.Session.GetInt32("UserId") ?? 0;
 }
 
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8" />
-    <title>Danh sách bài viết</title>
-    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
-</head>
-<body>
-    <div class="container mt-4">
-        <div class="d-flex justify-content-between mb-3">
-            <input type="text" id="searchInput" class="form-control w-50" placeholder="Tìm kiếm theo tiêu đề hoặc tác giả" onkeyup="filterTable()">
-            <select id="categorySelect" class="form-select w-25" onchange="filterCategory()">
-                <option value="all">Tất cả danh mục</option>
-            </select>
-            <select id="sortSelect" class="form-select w-25" onchange="sortTable()">
-                <option value="date">Sắp xếp theo: Ngày đăng mới nhất</option>
-                <option value="title">Theo chữ cái</option>
-                <option value="rating">Theo đánh giá</option>
-            </select>
+<div class="container mt-4">
+    <div class="d-flex justify-content-between mb-3">
+        <input type="text" id="searchInput" class="form-control w-50" placeholder="Tìm kiếm theo tiêu đề hoặc tác giả" onkeyup="filterTable()" />
+        <select id="categorySelect" class="form-select w-25" onchange="filterCategory()">
+            <option value="all">Tất cả danh mục</option>
+        </select>
+        <select id="sortSelect" class="form-select w-25" onchange="sortTable()">
+            <option value="date">Sắp xếp theo: Ngày đăng mới nhất</option>
+            <option value="title">Theo chữ cái</option>
+            <option value="rating">Theo đánh giá</option>
+        </select>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h3 class="card-title mb-0">Danh sách các bài viết</h3>
         </div>
-        <div class="card shadow-sm">
-            <div class="card-header bg-primary text-white">
-                <h3 class="card-title mb-0">Danh sách các bài viết</h3>
-            </div>
-            <div class="card-body p-0">
-                <table id="postsTable" class="table table-striped table-hover mb-0">
-                    <thead class="table-dark">
-                        <tr>
-                            <th>Tiêu đề</th>
-                            <th>Người đăng</th>
-                            <th>Ngày đăng</th>
-                            <th>Tổng đánh giá</th>
-                            <th>Giá</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <!-- Dữ liệu sẽ được chèn vào đây thông qua Ajax -->
-                    </tbody>
-                </table>
-            </div>
+        <div class="card-body p-0">
+            <table id="postsTable" class="table table-striped table-hover mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Tiêu đề</th>
+                        <th>Người đăng</th>
+                        <th>Ngày đăng</th>
+                        <th>Tổng đánh giá</th>
+                        <th>Giá</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Dữ liệu sẽ được chèn vào đây thông qua Ajax -->
+                </tbody>
+            </table>
         </div>
     </div>
 
-    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <!-- Modal thanh toán -->
+    <div class="modal fade" id="paymentModal" tabindex="-1" aria-labelledby="paymentModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-warning text-dark d-flex justify-content-between">
+                    <h5 class="modal-title" id="paymentModalLabel">Thanh toán để truy cập bài viết</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="modalPaymentBody">
+                    <!-- Nội dung thanh toán sẽ được tạo động -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
     <script>
+        const currentUserId = "@currentUserId";
+
         $(document).ready(function () {
             loadCategories();
             loadPosts();
@@ -58,13 +69,10 @@
                 type: 'GET',
                 dataType: 'json',
                 success: function (categories) {
-                    var categorySelect = $('#categorySelect');
+                    const categorySelect = $('#categorySelect');
                     categories.forEach(category => {
                         categorySelect.append(new Option(category.name, category.id));
                     });
-                },
-                error: function (xhr, status, error) {
-                    console.error("Lỗi khi lấy danh mục:", error);
                 }
             });
         }
@@ -75,71 +83,166 @@
                 type: 'GET',
                 dataType: 'json',
                 success: function (data) {
-                    var tbody = $('#postsTable tbody');
+                    const tbody = $('#postsTable tbody');
                     tbody.empty();
                     $.each(data, function (i, post) {
+                        let priceDisplay = "Miễn phí";
+                        if (post.type?.trim().toLowerCase() === "trả phí") {
+                            priceDisplay = post.price?.trim() !== "0.00 VNĐ" ? post.price : "Chưa có giá";
+                        }
                         tbody.append(
-                            '<tr data-category="' + post.categoryId + '">' +
-                                '<td><a href="@Url.Action("Details", "Post")?id=' + post.id + '">' + post.title + '</a></td>' +
-                                '<td>' + post.username + '</td>' +
-                                '<td>' + post.createdAt + '</td>' +
-                                '<td>' + post.totalRating + '</td>' +
-                                '<td>' + post.price + '</td>' +
-                            '</tr>'
+                            `<tr data-category="${post.categoryId}">
+                                <td><a href="#" onclick="handlePostClick(${post.id}, '${post.userId}', '${post.type}')">${post.title}</a></td>
+                                <td>${post.username}</td>
+                                <td>${post.createdAt}</td>
+                                <td>${post.totalRating}</td>
+                                <td>${priceDisplay}</td>
+                            </tr>`
                         );
                     });
-                },
-                error: function (xhr, status, error) {
-                    console.error("Lỗi khi lấy dữ liệu:", error);
+                    filterCategory();
+                    filterTable();
                 }
             });
         }
 
         function filterTable() {
-            let input = document.getElementById("searchInput").value.toLowerCase();
-            let rows = document.querySelectorAll("#postsTable tbody tr");
-            rows.forEach(row => {
-                let title = row.cells[0]?.textContent.toLowerCase() || "";
-                let author = row.cells[1]?.textContent.toLowerCase() || "";
-                row.style.display = (title.includes(input) || author.includes(input)) ? "" : "none";
+            const input = $('#searchInput').val().toLowerCase();
+            $('#postsTable tbody tr').each(function () {
+                const title = $(this).find('td').eq(0).text().toLowerCase();
+                const author = $(this).find('td').eq(1).text().toLowerCase();
+                $(this).toggle(title.includes(input) || author.includes(input));
             });
         }
 
         function filterCategory() {
-            let category = document.getElementById("categorySelect").value;
-            console.log("Selected category:", category);
-            let rows = document.querySelectorAll("#postsTable tbody tr");
-            rows.forEach(row => {
-                let postCategory = row.getAttribute("data-category") || "";
-                console.log("Row category:", postCategory);
-                row.style.display = (category === "all" || String(postCategory) === String(category)) ? "" : "none";
+            const category = $('#categorySelect').val();
+            $('#postsTable tbody tr').each(function () {
+                const postCategory = $(this).attr('data-category') || "";
+                $(this).toggle(category === "all" || String(postCategory) === String(category));
             });
         }
 
-
-
         function sortTable() {
-            let select = document.getElementById("sortSelect").value;
-            let table = document.getElementById("postsTable").getElementsByTagName("tbody")[0];
-            let rows = Array.from(table.getElementsByTagName("tr"));
-            rows.sort((a, b) => {
+            const select = $('#sortSelect').val();
+            const tbody = $('#postsTable tbody');
+            const rows = tbody.find('tr').get();
+            rows.sort(function (a, b) {
                 let valA, valB;
                 if (select === "date") {
-                    valA = new Date(a.cells[2]?.textContent || "");
-                    valB = new Date(b.cells[2]?.textContent || "");
+                    valA = new Date($(a).find('td').eq(2).text());
+                    valB = new Date($(b).find('td').eq(2).text());
                     return valB - valA;
                 } else if (select === "title") {
-                    valA = a.cells[0]?.textContent.toLowerCase() || "";
-                    valB = b.cells[0]?.textContent.toLowerCase() || "";
+                    valA = $(a).find('td').eq(0).text().toLowerCase();
+                    valB = $(b).find('td').eq(0).text().toLowerCase();
                     return valA.localeCompare(valB);
                 } else if (select === "rating") {
-                    valA = parseFloat(a.cells[3]?.textContent) || 0;
-                    valB = parseFloat(b.cells[3]?.textContent) || 0;
+                    valA = parseFloat($(a).find('td').eq(3).text()) || 0;
+                    valB = parseFloat($(b).find('td').eq(3).text()) || 0;
                     return valB - valA;
                 }
             });
-            rows.forEach(row => table.appendChild(row));
+            $.each(rows, function (index, row) {
+                tbody.append(row);
+            });
+        }
+
+        function handlePostClick(postId, authorId, type) {
+                    if (!type || type.trim().toLowerCase() !== "trả phí") {
+                        window.location.href = '@Url.Action("Details", "Post")?id=' + postId;
+                        return;
+                    }
+                    if (Number(currentUserId) === 0) {
+                        alert("Vui lòng đăng nhập để xem bài viết trả phí.");
+                        return;
+                    }
+                    if (String(currentUserId) === String(authorId)) {
+                        window.location.href = '@Url.Action("Details", "Post")?id=' + postId;
+                        return;
+                    }
+                    $.ajax({
+                        url: '@Url.Action("CheckPaymentStatus", "Post")',
+                        type: 'POST',
+                        data: { postId: postId },
+                        success: function (res) {
+                            if (res.status === 'Đã xác thực') {
+                                // Đã thanh toán => vào Details
+                                window.location.href = '@Url.Action("Details", "Post")?id=' + postId;
+
+                            } else if (res.status === 'Chờ xác thực') {
+                                // Đang chờ xác thực => chỉ show thông báo
+                                $('#modalPaymentBody').html(`
+                                    <div class="text-center py-4">
+                                        <i class="fas fa-hourglass-half fa-2x mb-3 text-warning"></i>
+                                        <p class="mb-0">Thanh toán của bạn đang chờ xác thực.</p>
+                                    </div>
+                                `);
+                                new bootstrap.Modal(document.getElementById('paymentModal')).show();
+
+                            } else {
+                                // Chưa thanh toán hoặc thất bại => show form upload
+                                renderPaymentUI(postId, res);
+                                new bootstrap.Modal(document.getElementById('paymentModal')).show();
+                            }
+                        }
+                    });
+                }
+
+        function renderPaymentUI(postId, data) {
+            let html = `
+                <div class="mb-3">
+                    <p>Giá: <strong>${data.price}</strong></p>
+                    <p>Quét mã QR để thanh toán:</p>
+                    <img src="${data.qr || '/images/qr.png'}" class="img-thumbnail mb-3" style="max-width: 200px;" />
+                    <div>
+                        <label>Minh chứng thanh toán:</label><br/>
+                        <input type="file" id="proofFile" accept="image/*" onchange="previewImage(this)" /><br/>
+                        <div id="previewContainer" class="mt-2"></div>
+                        ${data.status === "Chờ xác thực" && data.minhChung ? `
+                            <p class="mt-2">Đã gửi minh chứng trước đó:</p>
+                            <img src="${data.minhChung}" class="img-thumbnail" style="max-height: 150px;" />
+                        ` : ''}
+                    </div>
+                    <button class="btn btn-primary mt-3" onclick="submitProof(${postId})">Xác nhận thanh toán</button>
+                </div>`;
+            $('#modalPaymentBody').html(html);
+        }
+
+        function previewImage(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    $('#previewContainer').html('<img src="' + e.target.result + '" class="img-thumbnail" style="max-height: 150px;" />');
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function submitProof(postId) {
+            let file = $('#proofFile')[0].files[0];
+            if (!file) {
+                alert("Vui lòng chọn ảnh minh chứng.");
+                return;
+            }
+            let formData = new FormData();
+            formData.append("postId", postId);
+            formData.append("minhChung", file);
+            $.ajax({
+                url: '@Url.Action("ThanhToan", "Post")',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function (res) {
+                    if (res.success) {
+                        alert(res.message);
+                        bootstrap.Modal.getInstance(document.getElementById('paymentModal')).hide();
+                    } else {
+                        alert(res.message);
+                    }
+                }
+            });
         }
     </script>
-</body>
-</html>
+}

@@ -1,0 +1,82 @@
+﻿@{
+    ViewData["Title"] = "Bảng điều khiển Admin";
+    Layout = "_Layout";
+}
+
+<div class="container-fluid py-4">
+    <h1 class="mb-4 text-center">🎛️ Bảng điều khiển Admin</h1>
+
+    <div class="row g-4">
+        <!-- Mỗi thẻ chiếm nửa hàng trên mọi màn ≥md -->
+        <div class="col-12 col-md-6">
+            <div class="card shadow-sm h-100 border-0">
+                <div class="card-body text-center">
+                    <i class="bi bi-people-fill display-4 text-primary mb-3"></i>
+                    <h5 class="card-title">Quản lý tài khoản</h5>
+                    <p class="card-text text-muted">Xem, sửa, xóa người dùng</p>
+                    <a asp-controller="TaiKhoan" asp-action="Index" class="btn btn-outline-primary mt-2">
+                        Vào trang
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-6">
+            <div class="card shadow-sm h-100 border-0">
+                <div class="card-body text-center">
+                    <i class="bi bi-card-text display-4 text-success mb-3"></i>
+                    <h5 class="card-title">Quản lý bài đăng</h5>
+                    <p class="card-text text-muted">Duyệt, xóa, ẩn/hiện bài viết</p>
+                    <a asp-controller="QLBaiDang" asp-action="Index" class="btn btn-outline-success mt-2">
+                        Vào trang
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-6">
+            <div class="card shadow-sm h-100 border-0">
+                <div class="card-body text-center">
+                    <i class="bi bi-currency-dollar display-4 text-warning mb-3"></i>
+                    <h5 class="card-title">Quản lý thanh toán</h5>
+                    <p class="card-text text-muted">Xác thực, từ chối thanh toán</p>
+                    <a asp-controller="QLThanhToan" asp-action="Index" class="btn btn-outline-warning mt-2">
+                        Vào trang
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-6">
+            <div class="card shadow-sm h-100 border-0">
+                <div class="card-body text-center">
+                    <i class="bi bi-list-ul display-4 text-danger mb-3"></i>
+                    <h5 class="card-title">Quản lý danh mục</h5>
+                    <p class="card-text text-muted">Thêm, sửa, xóa danh mục</p>
+                    <a asp-controller="DanhMuc" asp-action="Index" class="btn btn-outline-danger mt-2">
+                        Vào trang
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        /* Hiệu ứng hover cho card */
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+            transition: all 0.2s;
+        }
+
+        .card {
+            border-radius: .75rem;
+        }
+
+            .card .card-title {
+                font-weight: 600;
+            }
+    </style>
+}

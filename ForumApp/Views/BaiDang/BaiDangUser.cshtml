@@ -1,0 +1,207 @@
+﻿@model IEnumerable<ForumApp.Models.Post>
+
+@{
+    ViewData["Title"] = "Bài đăng của tôi";
+}
+
+<div class="container mt-5">
+    <h2 class="fw-bold mb-4">📄 Bài đăng của bạn</h2>
+
+    @if (!Model.Any())
+    {
+        <div class="alert alert-info text-center">Bạn chưa có bài đăng nào.</div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover align-middle text-center">
+                <thead class="table-primary">
+                    <tr>
+                        <th>Tiêu đề</th>
+                        <th>Giá</th>
+                        <th>Tổng đánh giá</th>
+                        <th>Trạng thái</th>
+                        <th>Hành động</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var post in Model)
+                    {
+                        var price = (post.Type?.ToLower() == "trả phí" && post.PostPrices.Any())
+                        ? post.PostPrices.OrderByDescending(p => p.Id).First().Price
+                        : 0;
+                        <tr>
+                            <td class="text-start">
+                                <a href="#"
+                                   class="link-primary"
+                                   onclick="showPaymentsModal(@post.Id); return false;">
+                                    @post.Title
+                                </a>
+                            </td>
+                            <td>@(price > 0 ? price.ToString("N0") + " VNĐ" : "Miễn phí")</td>
+                            <td>@post.TotalRating</td>
+                            <td>
+                                @switch (post.Status)
+                                {
+                                    case "Chờ duyệt":
+                                        <span class="badge bg-warning text-dark">Chờ duyệt</span>
+                                        break;
+                                    case "Duyệt thất bại":
+                                        <span class="badge bg-danger">Duyệt thất bại</span>
+                                        break;
+                                    case "Đã duyệt":
+                                        <span class="badge bg-success">Đã duyệt</span>
+                                        break;
+                                    case "Đã ẩn":
+                                        <span class="badge bg-secondary">Đã ẩn</span>
+                                        break;
+                                }
+                            </td>
+                            <td>
+                                @if (post.Status == "Chờ duyệt" || post.Status == "Duyệt thất bại")
+                                {
+                                    <button class="btn btn-outline-danger btn-sm" onclick="xoaPost(@post.Id)">
+                                        <i class="bi bi-trash"></i> Xóa
+                                    </button>
+                                }
+                                else if (post.Status == "Đã duyệt")
+                                {
+                                    <button class="btn btn-outline-warning btn-sm" onclick="doiTrangThai(@post.Id,'Đã ẩn')">
+                                        <i class="bi bi-eye-slash"></i> Ẩn
+                                    </button>
+                                }
+                                else if (post.Status == "Đã ẩn")
+                                {
+                                    <button class="btn btn-outline-success btn-sm" onclick="doiTrangThai(@post.Id,'Đã duyệt')">
+                                        <i class="bi bi-eye"></i> Hiển thị
+                                    </button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+<!-- Modal quản lý Thanh toán -->
+<div class="modal fade" id="paymentsModal" tabindex="-1" aria-labelledby="paymentsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title" id="paymentsModalLabel">Thanh toán của bài viết</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="paymentsModalBody">
+                <!-- Nội dung sẽ load động -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal phóng to ảnh minh chứng -->
+<div class="modal fade" id="imagePreviewModal" tabindex="-1" aria-labelledby="imagePreviewLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content bg-transparent border-0">
+            <div class="modal-body p-0 text-center">
+                <img id="previewImage" src="" class="img-fluid rounded" alt="Preview" />
+            </div>
+            <div class="modal-footer justify-content-center border-0">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        var currentPostId = null;
+
+        function showPaymentsModal(postId) {
+            currentPostId = postId;
+            $.get('@Url.Action("GetPayments", "BaiDang")', { postId }, data => {
+                let html = `<table class="table table-striped">
+                  <thead>
+                    <tr>
+                      <th>ID</th><th>Giá</th><th>Minh chứng</th><th>Trạng thái</th><th>Thao tác</th>
+                    </tr>
+                  </thead>
+                  <tbody>`;
+                data.forEach(p => {
+                    html += `<tr>
+                      <td>${p.id}</td>
+                      <td>${p.gia.toLocaleString()} VNĐ</td>
+                      <td>
+                        <img src="${p.minhChung}"
+                             class="img-thumbnail img-clickable"
+                             style="max-height:80px; cursor:pointer;"
+                             onclick="showImageModal('${p.minhChung}')"/>
+                      </td>
+                      <td>${p.status}</td>
+                      <td>`;
+                    if (p.status === "Chờ xác thực") {
+                        html += `<button class="btn btn-sm btn-success me-1" onclick="approve(${p.id})">Xác thực</button>
+                                 <button class="btn btn-sm btn-danger" onclick="reject(${p.id})">Từ chối</button>`;
+                    } else {
+                        html += `<span class="text-muted">—</span>`;
+                    }
+                    html += `</td></tr>`;
+                });
+                html += `</tbody></table>`;
+                $('#paymentsModalBody').html(html);
+                new bootstrap.Modal(document.getElementById('paymentsModal')).show();
+            });
+        }
+
+        function approve(id) {
+            $.post('@Url.Action("ApprovePayment", "BaiDang")', { id })
+             .done(resp => {
+                if (resp.success) {
+                    showPaymentsModal(currentPostId);
+                } else {
+                    alert("Không thể xác thực.");
+                }
+             })
+             .fail(() => alert('Lỗi khi xác thực.'));
+        }
+
+        function reject(id) {
+            $.post('@Url.Action("RejectPayment", "BaiDang")', { id })
+             .done(resp => {
+                if (resp.success) {
+                    showPaymentsModal(currentPostId);
+                } else {
+                    alert("Không thể từ chối.");
+                }
+             })
+             .fail(() => alert('Lỗi khi từ chối.'));
+        }
+
+        function xoaPost(id) {
+            if (confirm("Bạn có chắc muốn xóa bài đăng này?")) {
+                $.post('@Url.Action("Xoa", "BaiDang")', { id })
+                    .done(resp => {
+                        if (resp.success) location.reload();
+                        else alert(resp.message || "Không thể xóa.");
+                    })
+                    .fail(() => alert("Lỗi khi xóa."));
+            }
+        }
+
+        function doiTrangThai(id, trangThaiMoi) {
+            $.post('@Url.Action("DoiTrangThai", "BaiDang")', { id, trangThaiMoi })
+                .done(resp => {
+                    if (resp.success) location.reload();
+                    else alert(resp.message || "Không thể cập nhật.");
+                })
+                .fail(() => alert("Lỗi khi cập nhật."));
+        }
+
+        // Hàm phóng to ảnh
+        function showImageModal(src) {
+            $('#previewImage').attr('src', src);
+            new bootstrap.Modal(document.getElementById('imagePreviewModal')).show();
+        }
+    </script>
+}

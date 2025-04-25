@@ -20,28 +20,14 @@
 
                 @if (Model.Type == "Trả phí")
                 {
-                    <div class="mb-3">
-                        <p><strong>Loại bài viết:</strong> <span class="text-danger">Trả phí</span></p>
-                        <p><strong>Giá:</strong> @(Model.CurrentPrice != null ? Model.CurrentPrice + " VNĐ" : "Chưa có thông tin")</p>
-
-                        @if (!string.IsNullOrEmpty(Model.User?.QRImagePath))
-                        {
-                            <p><strong>Quét mã QR để thanh toán:</strong></p>
-                            <img src='@Url.Content("~/uploads/" + Model.User.QRImagePath)'
-                                 alt="QR Code"
-                                 class="img-fluid"
-                                 style="max-width:200px;" />
-                        }
-                        else
-                        {
-                            <p class="text-danger"><strong>Người đăng chưa cập nhật mã QR!</strong></p>
-                        }
-                    </div>
+                    <p><strong>Loại bài viết:</strong> <span class="text-danger">Trả phí</span></p>
+                    <p><strong>Giá:</strong> @(Model.CurrentPrice != null ? string.Format("{0:N0}", Model.CurrentPrice) + " VNĐ" : "Chưa có thông tin")</p>
                 }
                 else
                 {
                     <p><strong>Loại bài viết:</strong> Miễn phí</p>
                 }
+
             </div>
 
             @if (!string.IsNullOrEmpty(Model.FilePath))
