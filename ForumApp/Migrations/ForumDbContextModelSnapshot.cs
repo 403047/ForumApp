@@ -113,7 +113,9 @@ namespace ForumApp.Migrations
                         .HasDefaultValue(0);
 
                     b.Property<DateTime>("DateSend")
-                        .HasColumnType("datetime2");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime")
+                        .HasDefaultValueSql("GETDATE()");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -248,6 +250,12 @@ namespace ForumApp.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DateOfBirth")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasMaxLength(150)
@@ -259,6 +267,10 @@ namespace ForumApp.Migrations
                     b.Property<string>("Password")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PhoneNumber")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
 
                     b.Property<string>("QRImagePath")
                         .HasColumnType("nvarchar(max)");

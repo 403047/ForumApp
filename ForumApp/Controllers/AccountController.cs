@@ -104,6 +104,7 @@ namespace ForumApp.Controllers
                 _context.Users.Add(newUser);
                 await _context.SaveChangesAsync();
                 Console.WriteLine("Đăng ký thành công!");
+                TempData["RegisterSuccess"] = "Đăng ký thành công! Bạn có thể đăng nhập ngay bây giờ.";
                 return RedirectToAction("Login");
             }
             catch (Exception ex)

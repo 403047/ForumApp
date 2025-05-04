@@ -2,134 +2,202 @@
 @{
     Layout = "_Layout";
     ViewData["Title"] = "Quản lý hóa đơn";
+    var locked = ViewBag.LockedPostIds as List<int> ?? new List<int>();
 }
 
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+
+<style>
+    .table thead th, .table thead td {
+        vertical-align: middle;
+    }
+
+    .table td, .table th {
+        vertical-align: middle !important;
+    }
+
+    .badge {
+        font-size: 1em;
+        padding: 0.5em 1em;
+        border-radius: 8px;
+    }
+
+    .btn {
+        border-radius: 8px;
+    }
+
+    .modal-content {
+        border-radius: 16px;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+    }
+
+    .img-thumbnail {
+        border-radius: 8px;
+        transition: box-shadow 0.2s;
+    }
+
+        .img-thumbnail:hover {
+            box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+        }
+
+    .fw-bold {
+        letter-spacing: 0.5px;
+    }
+</style>
+
 <div class="container mt-4">
-    <h2 class="mb-4">Quản lý hóa đơn của bạn</h2>
+    <h2 class="mb-4 fw-bold"><i class="bi bi-receipt-cutoff me-2"></i>Quản lý hóa đơn của bạn</h2>
 
     @if (TempData["Success"] != null)
     {
-        <div class="alert alert-success">@TempData["Success"]</div>
+        <div class="alert alert-success shadow-sm rounded-3"><i class="bi bi-check-circle-fill me-2"></i>@TempData["Success"]</div>
     }
 
-    <table class="table table-hover align-middle">
-        <thead class="table-light">
-            <tr>
-                <th>Id</th>
-                <th>Bài viết</th>
-                <th>Giá</th>
-                <th>Minh chứng</th>
-                <th>Trạng thái</th>
-                <th>Hành động</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var ct in Model)
-            {
-                var modalId = "editModal-" + ct.Id;
+    <div class="table-responsive">
+        <table class="table table-hover align-middle shadow-sm bg-white">
+            <thead class="table-light">
                 <tr>
-                    <td>@ct.Id</td>
-                    <td>
-                        @if (ct.HoaDon.Status == "Đã xác thực")
-                        {
-                            <a href="@Url.Action("Details", "Post", new { id = ct.IdPost })">
-                                @ct.Post.Title
-                            </a>
-                        }
-                        else
-                        {
-                            @ct.Post.Title
-                        }
-                    </td>
-                    <td>@ct.Gia.ToString("N0") VNĐ</td>
-                    <td>
-                        <img src="@ct.MinhChung"
-                             class="img-thumbnail img-clickable"
-                             style="max-height:80px; cursor:pointer;"
-                             onclick="showImageModal('@ct.MinhChung')" />
-                    </td>
-                    <td>@ct.HoaDon.Status</td>
-                    <td>
-                        @if (ct.HoaDon.Status == "Chờ xác thực")
-                        {
-                            <button class="btn btn-sm btn-primary me-1"
-                                    data-bs-toggle="modal"
-                                    data-bs-target="#@modalId">
-                                Sửa
-                            </button>
-                            <button class="btn btn-sm btn-danger"
-                                    onclick="deleteInvoice(@ct.Id)">
-                                Xóa
-                            </button>
-                        }
-                        else if (ct.HoaDon.Status == "Xác thực thất bại")
-                        {
-                            <button class="btn btn-sm btn-danger me-1"
-                                    onclick="deleteInvoice(@ct.Id)">
-                                Xóa
-                            </button>
-                            <button class="btn btn-sm btn-warning"
-                                    onclick="resendInvoice(@ct.Id)">
-                                Gửi lại
-                            </button>
-                        }
-                        else
-                        {
-                            <span class="text-muted">—</span>
-                        }
-                    </td>
+                    <th>Id</th>
+                    <th>Bài viết</th>
+                    <th>Giá</th>
+                    <th>Minh chứng</th>
+                    <th>Trạng thái</th>
+                    <th>Hành động</th>
                 </tr>
-
-                @* Modal “Sửa minh chứng” cho bản ghi này *@
-                <div class="modal fade" id="@modalId" tabindex="-1" aria-labelledby="@($"{modalId}Label")" aria-hidden="true">
-                    <div class="modal-dialog">
-                        <div class="modal-content">
-                            <form asp-action="Edit"
-                                  asp-controller="QuanLyHoaDon"
-                                  enctype="multipart/form-data"
-                                  method="post">
-                                <div class="modal-header">
-                                    <h5 class="modal-title" id="@($"{modalId}Label")">
-                                        Sửa minh chứng hóa đơn #@ct.Id
-                                    </h5>
-                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                </div>
-                                <div class="modal-body">
-                                    <input type="hidden" name="id" value="@ct.Id" />
-
-                                    <div class="mb-3">
-                                        <label class="form-label">Ảnh hiện tại</label><br />
-                                        <img src="@ct.MinhChung"
-                                             class="img-fluid img-thumbnail img-clickable"
-                                             style="max-height:150px; cursor:pointer;"
-                                             onclick="showImageModal('@ct.MinhChung')" />
-                                    </div>
-
-                                    <div class="mb-3">
-                                        <label class="form-label">Chọn ảnh mới</label>
-                                        <input type="file" name="minhChung" class="form-control" accept="image/*" required />
-                                    </div>
-                                </div>
-                                <div class="modal-footer">
-                                    <button type="button"
-                                            class="btn btn-secondary"
-                                            data-bs-dismiss="modal">
-                                        Hủy
+            </thead>
+            <tbody>
+                @foreach (var ct in Model)
+                {
+                    var modalId = "editModal-" + ct.Id;
+                    <tr>
+                        <td>@ct.Id</td>
+                        <td>
+                            @if (ct.HoaDon.Status == "Đã xác thực")
+                            {
+                                <a href="@Url.Action("Details", "Post", new { id = ct.IdPost })" class="fw-semibold link-primary">
+                                    <i class="bi bi-file-earmark-text me-1"></i>@ct.Post.Title
+                                </a>
+                            }
+                            else
+                            {
+                                <span class="fw-semibold"><i class="bi bi-file-earmark-text me-1"></i>@ct.Post.Title</span>
+                            }
+                        </td>
+                        <td>
+                            <span class="text-danger fw-bold"><i class="bi bi-cash-coin me-1"></i>@ct.Gia.ToString("N0") VNĐ</span>
+                        </td>
+                        <td>
+                            <img src="@ct.MinhChung"
+                                 class="img-thumbnail img-clickable"
+                                 style="max-height:80px; cursor:pointer;"
+                                 onclick="showImageModal('@ct.MinhChung')" />
+                        </td>
+                        <td>
+                            @if (ct.HoaDon.Status == "Đã xác thực")
+                            {
+                                <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Đã xác thực</span>
+                            }
+                            else if (ct.HoaDon.Status == "Chờ xác thực")
+                            {
+                                <span class="badge bg-warning text-dark"><i class="bi bi-hourglass-split me-1"></i>Chờ xác thực</span>
+                            }
+                            else if (ct.HoaDon.Status == "Xác thực thất bại")
+                            {
+                                <span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>Xác thực thất bại</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary">@ct.HoaDon.Status</span>
+                            }
+                        </td>
+                        <td>
+                            @if (ct.HoaDon.Status == "Chờ xác thực")
+                            {
+                                <button class="btn btn-sm btn-primary me-1"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#@modalId">
+                                    <i class="bi bi-pencil-square"></i> Sửa
+                                </button>
+                                <button class="btn btn-sm btn-danger"
+                                        onclick="deleteInvoice(@ct.Id)">
+                                    <i class="bi bi-trash"></i> Xóa
+                                </button>
+                            }
+                            else if (ct.HoaDon.Status == "Xác thực thất bại")
+                            {
+                                <button class="btn btn-sm btn-danger me-1"
+                                        onclick="deleteInvoice(@ct.Id)">
+                                    <i class="bi bi-trash"></i> Xóa
+                                </button>
+                                @if (!locked.Contains(ct.IdPost))
+                                {
+                                    <button class="btn btn-sm btn-warning"
+                                            onclick="resendInvoice(@ct.Id)">
+                                        <i class="bi bi-arrow-repeat"></i> Gửi lại
                                     </button>
-                                    <button type="submit" class="btn btn-primary">
-                                        Lưu thay đổi
-                                    </button>
-                                </div>
-                            </form>
+                                }
+                                else
+                                {
+                                    <span class="text-muted" title="Đã có đơn chờ hoặc đã xác thực">—</span>
+                                }
+                            }
+                            else
+                            {
+                                <span class="text-muted">—</span>
+                            }
+                        </td>
+                    </tr>
+
+                    <!-- Modal Sửa minh chứng -->
+                    <div class="modal fade" id="@modalId" tabindex="-1" aria-labelledby="@($"{modalId}Label")" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <form asp-action="Edit"
+                                      asp-controller="QuanLyHoaDon"
+                                      enctype="multipart/form-data"
+                                      method="post">
+                                    <div class="modal-header bg-info text-white">
+                                        <h5 class="modal-title" id="@($"{modalId}Label")">
+                                            <i class="bi bi-pencil-square me-2"></i>Sửa minh chứng hóa đơn #@ct.Id
+                                        </h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <input type="hidden" name="id" value="@ct.Id" />
+                                        <div class="mb-3">
+                                            <label class="form-label">Ảnh hiện tại</label><br />
+                                            <img src="@ct.MinhChung"
+                                                 class="img-fluid img-thumbnail img-clickable"
+                                                 style="max-height:150px; cursor:pointer;"
+                                                 onclick="showImageModal('@ct.MinhChung')" />
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Chọn ảnh mới</label>
+                                            <input type="file" name="minhChung" class="form-control" accept="image/*" required />
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button"
+                                                class="btn btn-secondary"
+                                                data-bs-dismiss="modal">
+                                            Hủy
+                                        </button>
+                                        <button type="submit" class="btn btn-primary">
+                                            Lưu thay đổi
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
                         </div>
                     </div>
-                </div>
-            }
-        </tbody>
-    </table>
+                }
+            </tbody>
+        </table>
+    </div>
 </div>
 
-@* Modal phóng to ảnh chung *@
+<!-- Modal phóng to ảnh chung -->
 <div class="modal fade" id="imagePreviewModal" tabindex="-1" aria-labelledby="imagePreviewLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content bg-transparent border-0">
@@ -145,12 +213,13 @@
 
 @section Scripts {
     <script>
-        // Mở modal phóng to ảnh
+        // Phóng to ảnh
         function showImageModal(src) {
             document.getElementById('previewImage').src = src;
             new bootstrap.Modal(document.getElementById('imagePreviewModal')).show();
         }
 
+        // Xóa hóa đơn
         function deleteInvoice(id) {
             if (!confirm("Bạn có chắc muốn xóa hóa đơn này?")) return;
             $.post('@Url.Action("Delete", "QuanLyHoaDon")', { id })
@@ -161,6 +230,7 @@
              .fail(()=> alert("Lỗi khi xóa hóa đơn."));
         }
 
+        // Gửi lại hóa đơn
         function resendInvoice(id) {
             $.post('@Url.Action("Resend", "QuanLyHoaDon")', { id })
              .done(resp => {

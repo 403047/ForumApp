@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ForumApp.Models
@@ -17,15 +18,16 @@ namespace ForumApp.Models
         [Required]
         public string Password { get; set; }
 
-        // Thêm khóa ngoại đến bảng Role
+        // Khóa ngoại đến Role
         [ForeignKey("Role")]
         public int IdRole { get; set; }
         public Role Role { get; set; }
 
-        // Đường dẫn ảnh QR (có thể null)
+        // QR code (có thể null)
         public string? QRImagePath { get; set; }
 
-        // Trạng thái tài khoản (mặc định là true - kích hoạt)
+        // Trạng thái kích hoạt
         public bool Status { get; set; } = true;
+
     }
 }

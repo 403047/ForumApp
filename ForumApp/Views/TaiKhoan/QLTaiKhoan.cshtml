@@ -2,53 +2,128 @@
     ViewData["Title"] = "Quản lý tài khoản";
 }
 
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+
+<style>
+    .back-btn {
+        position: absolute;
+        top: 24px;
+        left: 32px;
+        z-index: 10;
+    }
+
+    .table {
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+    }
+
+    .table-striped > tbody > tr:nth-of-type(odd) > * {
+        --bs-table-accent-bg: #f8f9fa;
+        color: var(--bs-table-striped-color);
+    }
+
+    .input-group {
+        box-shadow: 0 2px 8px rgba(13,110,253,0.07);
+        border-radius: 8px;
+    }
+
+    .form-control:focus {
+        box-shadow: 0 0 0 0.15rem #0d6efd33;
+    }
+
+    .btn-primary, .btn-success {
+        border-radius: 8px;
+        font-weight: 500;
+    }
+
+        .btn-primary:hover, .btn-success:hover {
+            opacity: 0.93;
+        }
+
+    .table th, .table td {
+        vertical-align: middle !important;
+    }
+
+    .table th {
+        font-size: 1.05rem;
+        letter-spacing: 0.5px;
+    }
+
+    .table td select {
+        min-width: 110px;
+    }
+
+    .qltk-title {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #0d6efd;
+        letter-spacing: 1px;
+        margin-bottom: 1.5rem;
+        text-shadow: 0 2px 8px rgba(13,110,253,0.08);
+    }
+</style>
+
+<!-- Nút quay lại trang Admin -->
+<a asp-controller="GiaoDienAdmin" asp-action="Index" class="btn btn-outline-secondary back-btn">
+    <i class="bi bi-arrow-left-circle me-1"></i> Quay lại Admin
+</a>
+
 <!-- Tiêu đề -->
-<h2 class="text-center my-4">Quản lý Tài Khoản</h2>
+<h2 class="text-center my-4 qltk-title">
+    <i class="bi bi-person-badge-fill me-2 text-primary"></i>
+    Quản lý Tài Khoản
+</h2>
 
 <!-- Ô tìm kiếm -->
 <div class="input-group mb-3 w-50 mx-auto">
     <input type="text" id="searchUser" class="form-control" placeholder="Nhập tên người dùng để tìm kiếm">
-    <button class="btn btn-primary" id="btnSearch">Tìm</button>
+    <button class="btn btn-primary" id="btnSearch">
+        <i class="bi bi-search"></i> Tìm
+    </button>
 </div>
 
 <!-- Bảng danh sách tài khoản -->
-<table class="table table-bordered table-striped text-center">
-    <thead class="table-dark">
-        <tr>
-            <th>ID</th>
-            <th>Tên người dùng</th>
-            <th>Vai trò</th>
-            <th>Trạng thái</th>
-            <th>Hành động</th>
-        </tr>
-    </thead>
-    <tbody id="userTable">
-        @foreach (var user in Model)
-        {
+<div class="table-responsive">
+    <table class="table table-bordered table-striped text-center align-middle shadow-sm bg-white">
+        <thead class="table-dark">
             <tr>
-                <td>@user.Id</td>
-                <td>@user.Username</td>
-                <td>
-                    <select class="form-select role-select" data-id="@user.Id">
-                        <option value="1" selected="@(user.RoleName == "User" ? "selected" : null)">User</option>
-                        <option value="2" selected="@(user.RoleName == "Admin" ? "selected" : null)">Admin</option>
-                    </select>
-                </td>
-                <td>
-                    <select class="form-select status-select" data-id="@user.Id">
-                        <option value="true" selected="@(user.Status == "Active" ? "selected" : null)">Active</option>
-                        <option value="false" selected="@(user.Status == "Inactive" ? "selected" : null)">Inactive</option>
-                    </select>
-                </td>
-                <td>
-                    <button class="btn btn-success btn-sm update-user" data-id="@user.Id">
-                        <i class="bi bi-save"></i> Cập nhật
-                    </button>
-                </td>
+                <th><i class="bi bi-hash"></i> ID</th>
+                <th><i class="bi bi-person"></i> Tên người dùng</th>
+                <th><i class="bi bi-person-gear"></i> Vai trò</th>
+                <th><i class="bi bi-shield-check"></i> Trạng thái</th>
+                <th><i class="bi bi-tools"></i> Hành động</th>
             </tr>
-        }
-    </tbody>
-</table>
+        </thead>
+        <tbody id="userTable">
+            @foreach (var user in Model)
+            {
+                <tr>
+                    <td>@user.Id</td>
+                    <td>@user.Username</td>
+                    <td>
+                        <select class="form-select role-select" data-id="@user.Id">
+                            <option value="1" selected="@(user.RoleName == "User" ? "selected" : null)">User</option>
+                            <option value="2" selected="@(user.RoleName == "Admin" ? "selected" : null)">Admin</option>
+                        </select>
+                    </td>
+                    <td>
+                        <select class="form-select status-select" data-id="@user.Id">
+                            <option value="true" selected="@(user.Status == "Active" ? "selected" : null)">Active</option>
+                            <option value="false" selected="@(user.Status == "Inactive" ? "selected" : null)">Inactive</option>
+                        </select>
+                    </td>
+                    <td>
+                        <button class="btn btn-success btn-sm update-user" data-id="@user.Id">
+                            <i class="bi bi-save"></i> Cập nhật
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
 
 @section Scripts {
     <script>

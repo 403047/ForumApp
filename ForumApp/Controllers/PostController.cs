@@ -85,14 +85,13 @@ namespace ForumApp.Controllers
         // Action hiển thị chi tiết bài viết
         public IActionResult Details(int id)
         {
-            var userId = HttpContext.Session.GetInt32("UserId"); // Lấy ID người dùng từ session
+            var userId = HttpContext.Session.GetInt32("UserId");
 
-            // Include Ratings to ensure the TotalRating property is populated
             var post = _context.Posts
                 .Include(p => p.User)
                 .Include(p => p.Category)
                 .Include(p => p.PostPrices)
-                .Include(p => p.Ratings)      // Add this line to load ratings
+                .Include(p => p.Ratings)
                 .FirstOrDefault(p => p.Id == id);
 
             if (post == null)
@@ -114,9 +113,34 @@ namespace ForumApp.Controllers
             }
             ViewBag.IsBookmarked = isBookmarked;
 
+            // Đếm số trang file Word nếu có file
+            if (!string.IsNullOrEmpty(post.FilePath))
+            {
+                var filePath = Path.Combine(_webHostEnvironment.WebRootPath, post.FilePath.TrimStart('/'));
+                if (System.IO.File.Exists(filePath))
+                {
+                    try
+                    {
+                        var doc = new Aspose.Words.Document(filePath);
+                        post.TotalPages = doc.PageCount;
+                    }
+                    catch
+                    {
+                        post.TotalPages = 1;
+                    }
+                }
+                else
+                {
+                    post.TotalPages = 1;
+                }
+            }
+            else
+            {
+                post.TotalPages = 1;
+            }
+
             return View(post);
         }
-
 
         // Action hiển thị nội dung file Word theo trang
         [HttpGet]

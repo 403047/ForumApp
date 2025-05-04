@@ -7,6 +7,7 @@ using ForumApp.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Hosting;
 
 namespace ForumApp.Controllers
 {
@@ -24,14 +25,25 @@ namespace ForumApp.Controllers
         public async Task<IActionResult> Index()
         {
             var userId = HttpContext.Session.GetInt32("UserId");
-            if (userId == null) return RedirectToAction("Login", "Account");
+            if (userId == null)
+                return RedirectToAction("Login", "Account");
 
+            // 1. Load tất cả chi tiết hóa đơn của user
             var items = await _context.ChiTietHoaDons
                 .Include(ct => ct.HoaDon)
                 .Include(ct => ct.Post)
-                .Where(ct => ct.IdUser == userId)
+                .Where(ct => ct.IdUser == userId.Value)
                 .OrderByDescending(ct => ct.Id)
                 .ToListAsync();
+
+            // 2. Tính danh sách post đã có hóa đơn "Chờ xác thực" hoặc "Đã xác thực"
+            var lockedPostIds = items
+                .Where(ct => ct.HoaDon.Status == "Chờ xác thực" || ct.HoaDon.Status == "Đã xác thực")
+                .Select(ct => ct.IdPost)
+                .Distinct()
+                .ToList();
+
+            ViewBag.LockedPostIds = lockedPostIds;
 
             return View(items);
         }
@@ -63,7 +75,8 @@ namespace ForumApp.Controllers
 
             // Lưu file mới
             var uploads = Path.Combine(_env.WebRootPath, "minhchung");
-            if (!Directory.Exists(uploads)) Directory.CreateDirectory(uploads);
+            if (!Directory.Exists(uploads))
+                Directory.CreateDirectory(uploads);
             var fileName = Guid.NewGuid() + Path.GetExtension(minhChung.FileName);
             var path = Path.Combine(uploads, fileName);
             using (var fs = new FileStream(path, FileMode.Create))

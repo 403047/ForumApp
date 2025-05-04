@@ -4,30 +4,73 @@
     ViewData["Title"] = "Danh sách bài viết đã bookmark";
 }
 
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+
+<style>
+    .table thead th, .table thead td {
+        vertical-align: middle;
+    }
+
+    .table td, .table th {
+        vertical-align: middle !important;
+    }
+
+    .fw-bold {
+        letter-spacing: 0.5px;
+    }
+
+    .table {
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+    }
+
+    .alert {
+        border-radius: 12px;
+    }
+
+    .bookmark-title {
+        font-size: 2rem;
+        font-weight: bold;
+        letter-spacing: 1px;
+        color: #0d6efd;
+    }
+
+    .table-striped > tbody > tr:nth-of-type(odd) > * {
+        --bs-table-accent-bg: #f8f9fa;
+        color: var(--bs-table-striped-color);
+    }
+</style>
+
 <div class="container mt-4">
-    <h2 class="mb-4 text-center">Danh sách bài viết đã bookmark</h2>
+    <h2 class="mb-4 text-center bookmark-title">
+        <i class="bi bi-bookmark-star-fill me-2 text-warning"></i>
+        Danh sách bài viết đã bookmark
+    </h2>
 
     @if (Model != null && Model.Any())
     {
         <div class="table-responsive">
-            <table class="table table-striped table-hover">
+            <table class="table table-striped table-hover shadow-sm bg-white">
                 <thead class="table-dark">
                     <tr>
-                        <th>Tiêu đề</th>
-                        <th>Danh mục</th>
-                        <th>Ngày tạo</th>
+                        <th><i class="bi bi-file-earmark-text me-1"></i>Tiêu đề</th>
+                        <th><i class="bi bi-folder2-open me-1"></i>Danh mục</th>
+                        <th><i class="bi bi-calendar-date me-1"></i>Ngày tạo</th>
                     </tr>
                 </thead>
                 <tbody id="bookmark-list">
                     @foreach (var post in Model)
                     {
                         <tr>
-                            <td>
-                                <a href="@Url.Action("Details", "Post", new { id = post.Id })" class="text-decoration-none">
-                                    @post.Title
+                            <td class="text-start">
+                                <a href="@Url.Action("Details", "Post", new { id = post.Id })"
+                                   class="text-decoration-none fw-semibold link-primary">
+                                    <i class="bi bi-bookmark-heart-fill text-warning me-1"></i>@post.Title
                                 </a>
                             </td>
-                            <td>@(post.Category?.Name ?? "Không có danh mục")</td>
+                            <td>@(post.Category?.Name ?? "<span class=\"text-muted\">Không có danh mục</span>")</td>
                             <td>@post.CreatedAt.ToString("dd/MM/yyyy")</td>
                         </tr>
                     }
@@ -37,7 +80,8 @@
     }
     else
     {
-        <div class="alert alert-warning" role="alert">
+        <div class="alert alert-warning text-center shadow-sm" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
             Bạn chưa bookmark bài viết nào.
         </div>
     }
