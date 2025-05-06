@@ -330,6 +330,7 @@ namespace ForumApp.Controllers
             }
         }
 
+
         // ACTION ThanhToan: Tạo hóa đơn và chi tiết hóa đơn
         // Controllers/PostController.cs
         [HttpPost]

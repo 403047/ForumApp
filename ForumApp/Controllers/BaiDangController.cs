@@ -31,7 +31,6 @@ namespace ForumApp.Controllers
             return View(posts);
         }
 
-        // Lấy danh sách các ChiTietHoaDon của 1 post
         [HttpGet]
         public async Task<IActionResult> GetPayments(int postId)
         {
@@ -41,7 +40,8 @@ namespace ForumApp.Controllers
 
             var payments = await _context.ChiTietHoaDons
                 .Include(ct => ct.HoaDon)
-                .Where(ct => ct.IdPost == postId)
+                .Where(ct => ct.IdPost == postId &&
+                    (ct.HoaDon.AuthenticationTimes == 0 || ct.HoaDon.Status == "Đã xác thực"))
                 .Select(ct => new
                 {
                     ct.Id,

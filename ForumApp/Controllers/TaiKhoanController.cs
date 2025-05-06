@@ -23,6 +23,7 @@ namespace ForumApp.Controllers
                     (u, r) => new {
                         u.Id,
                         u.Username,
+                        u.Email,
                         RoleName = r.RoleName,
                         Status = u.Status ? "Active" : "Inactive"
                     })
@@ -51,6 +52,19 @@ namespace ForumApp.Controllers
             _context.SaveChanges();
 
             return Json(new { success = true, message = "Cập nhật thành công" });
+        }
+        [HttpPost]
+        public IActionResult ResetPassword([FromBody] int id)
+        {
+            var user = _context.Users.Find(id);
+            if (user == null)
+            {
+                return NotFound(new { success = false, message = "Người dùng không tồn tại" });
+            }
+            // Đặt lại mật khẩu thành "111111" và mã hóa bằng BCrypt
+            user.Password = BCrypt.Net.BCrypt.HashPassword("111111");
+            _context.SaveChanges();
+            return Json(new { success = true, message = "Đã đặt lại mật khẩu" });
         }
     }
 }

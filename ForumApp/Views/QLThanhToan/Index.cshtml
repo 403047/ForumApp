@@ -35,6 +35,16 @@
     </a>
     <h2 class="mb-4 text-center">📑 Quản lý Thanh toán</h2>
 
+    <!-- Thanh chọn lọc trạng thái thanh toán -->
+    <div class="mb-3 d-flex justify-content-end">
+        <select id="filterStatus" class="form-select w-auto">
+            <option value="all">Tất cả thanh toán</option>
+            <option value="verified">Đã xác thực</option>
+            <option value="unverified">Chưa xác thực</option>
+            <option value="failed">Xác thực thất bại</option>
+        </select>
+    </div>
+
     @if (!Model.Any())
     {
         <div class="alert alert-info text-center">
@@ -60,7 +70,8 @@
                 <tbody>
                     @foreach (var x in Model)
                     {
-                        <tr class="text-center">
+                        var statusClass = x.Status == "Đã xác thực" ? "verified" : (x.Status == "Chờ xác thực" ? "unverified" : (x.Status == "Xác thực thất bại" ? "failed" : ""));
+                            <tr class="text-center payment-row @statusClass">
                             <td class="text-start">
                                 <a asp-controller="Post" asp-action="Details" asp-route-id="@x.PostId" class="fw-semibold text-decoration-none text-primary">
                                     @x.PostTitle
@@ -163,5 +174,20 @@
              })
              .fail(() => alert("Lỗi khi từ chối."));
         }
+        document.getElementById('filterStatus').addEventListener('change', function () {
+                    var value = this.value;
+                    var rows = document.querySelectorAll('.payment-row');
+                    rows.forEach(function(row) {
+                        if (value === 'all') {
+                            row.style.display = '';
+                        } else if (value === 'verified') {
+                            row.style.display = row.classList.contains('verified') ? '' : 'none';
+                        } else if (value === 'unverified') {
+                            row.style.display = row.classList.contains('unverified') ? '' : 'none';
+                        } else if (value === 'failed') {
+                            row.style.display = row.classList.contains('failed') ? '' : 'none';
+                        }
+                    });
+                });
     </script>
 }

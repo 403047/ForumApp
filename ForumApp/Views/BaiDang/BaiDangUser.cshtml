@@ -166,9 +166,14 @@
 @section Scripts {
     <script>
         var currentPostId = null;
+        var paymentsModalInstance = null;
 
         function showPaymentsModal(postId) {
             currentPostId = postId;
+            // Đóng modal cũ nếu đang mở
+            if (paymentsModalInstance) {
+                paymentsModalInstance.hide();
+            }
             $.get('@Url.Action("GetPayments", "BaiDang")', { postId }, data => {
                 let html = `<table class="table table-striped align-middle text-center">
                   <thead>
@@ -207,7 +212,8 @@
                 });
                 html += `</tbody></table>`;
                 $('#paymentsModalBody').html(html);
-                new bootstrap.Modal(document.getElementById('paymentsModal')).show();
+                paymentsModalInstance = new bootstrap.Modal(document.getElementById('paymentsModal'));
+                paymentsModalInstance.show();
             });
         }
 
@@ -215,7 +221,8 @@
             $.post('@Url.Action("ApprovePayment", "BaiDang")', { id })
              .done(resp => {
                 if (resp.success) {
-                    showPaymentsModal(currentPostId);
+                    if (paymentsModalInstance) paymentsModalInstance.hide();
+                    setTimeout(() => showPaymentsModal(currentPostId), 300);
                 } else {
                     alert("Không thể xác thực.");
                 }
@@ -227,7 +234,8 @@
             $.post('@Url.Action("RejectPayment", "BaiDang")', { id })
              .done(resp => {
                 if (resp.success) {
-                    showPaymentsModal(currentPostId);
+                    if (paymentsModalInstance) paymentsModalInstance.hide();
+                    setTimeout(() => showPaymentsModal(currentPostId), 300);
                 } else {
                     alert("Không thể từ chối.");
                 }

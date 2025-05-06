@@ -91,6 +91,7 @@
             <tr>
                 <th><i class="bi bi-hash"></i> ID</th>
                 <th><i class="bi bi-person"></i> Tên người dùng</th>
+                <th><i class="bi bi-envelope"></i> Email</th>
                 <th><i class="bi bi-person-gear"></i> Vai trò</th>
                 <th><i class="bi bi-shield-check"></i> Trạng thái</th>
                 <th><i class="bi bi-tools"></i> Hành động</th>
@@ -102,6 +103,7 @@
                 <tr>
                     <td>@user.Id</td>
                     <td>@user.Username</td>
+                    <td>@user.Email</td>
                     <td>
                         <select class="form-select role-select" data-id="@user.Id">
                             <option value="1" selected="@(user.RoleName == "User" ? "selected" : null)">User</option>
@@ -117,6 +119,9 @@
                     <td>
                         <button class="btn btn-success btn-sm update-user" data-id="@user.Id">
                             <i class="bi bi-save"></i> Cập nhật
+                        </button>
+                        <button class="btn btn-warning btn-sm rounded-pill reset-password" data-id="@user.Id">
+                            <i class="bi bi-arrow-repeat"></i> Đặt lại mật khẩu
                         </button>
                     </td>
                 </tr>
@@ -154,6 +159,23 @@
                         alert("Có lỗi xảy ra, vui lòng thử lại!");
                     }
                 });
+            });
+                        $(document).on("click", ".reset-password", function () {
+                var userId = $(this).data("id");
+                if (confirm("Bạn muốn đặt lại mật khẩu của người dùng này?")) {
+                    $.ajax({
+                        url: "@Url.Action("ResetPassword", "TaiKhoan")",
+                        type: "POST",
+                        contentType: "application/json",
+                        data: JSON.stringify(userId),
+                        success: function (response) {
+                            alert(response.message);
+                        },
+                        error: function () {
+                            alert("Có lỗi xảy ra, vui lòng thử lại!");
+                        }
+                    });
+                }
             });
         });
     </script>

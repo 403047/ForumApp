@@ -1,6 +1,11 @@
 ﻿@{
     Layout = "_Layout";
     var currentUserId = Context.Session.GetInt32("UserId") ?? 0;
+    var userRole = Context.Session.GetString("UserRole");
+    if (userRole == "Admin")
+    {
+        Context.Response.Redirect("/GiaoDienAdmin/Index");
+    }
 }
 
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -95,7 +100,10 @@
         </div>
     </div>
 </div>
-
+<footer class="text-center mt-5 mb-3">
+    <hr>
+    <span>Email hỗ trợ: emsihhl@gmail.com</span>
+</footer>
 @section Scripts {
     <script>
         const currentUserId = "@currentUserId";

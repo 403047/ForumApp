@@ -132,7 +132,15 @@
             const contentTextarea = document.getElementById("Content");
 
             let editorInstance;
-            ClassicEditor.create(contentTextarea).then(editor => {
+            ClassicEditor.create(contentTextarea, {
+                toolbar: [
+                    'heading', '|',
+                    'bold', 'italic', 'underline', 'strikethrough', 'bulletedList', 'numberedList', '|',
+                    'alignment', 'fontColor', 'fontBackgroundColor', 'fontSize', '|',
+                    'insertTable', 'blockQuote', 'undo', 'redo'
+                ]
+                // Không còn simpleUpload ở đây
+            }).then(editor => {
                 editorInstance = editor;
             }).catch(error => {
                 console.error(error);
