@@ -69,7 +69,7 @@
                 </div>
             }
 
-            <form asp-action="Create" method="post" enctype="multipart/form-data">
+            <form asp-action="Create" method="post" enctype="multipart/form-data" id="postForm">
                 <div class="mb-3">
                     <label asp-for="Title" class="form-label"><i class="fas fa-heading"></i>Tiêu đề</label>
                     <input asp-for="Title" class="form-control" required />
@@ -112,11 +112,21 @@
 
                 <div id="priceField" class="mb-3" style="display:none;">
                     <label class="form-label"><i class="fas fa-coins"></i>Giá tiền</label>
-                    <input name="Price" type="number" class="form-control" min="1000" step="1" />
+                    <input name="Price" id="Price" type="number" class="form-control" min="1000" step="1" />
                 </div>
 
                 <button type="submit" class="btn btn-primary"><i class="fas fa-paper-plane me-1"></i>Đăng bài</button>
             </form>
+        </div>
+    </div>
+</div>
+
+<!-- Toast thông báo -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 9999">
+    <div id="toastMessage" class="toast align-items-center text-bg-danger border-0" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body" id="toastBody"></div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
         </div>
     </div>
 </div>
@@ -132,15 +142,7 @@
             const contentTextarea = document.getElementById("Content");
 
             let editorInstance;
-            ClassicEditor.create(contentTextarea, {
-                toolbar: [
-                    'heading', '|',
-                    'bold', 'italic', 'underline', 'strikethrough', 'bulletedList', 'numberedList', '|',
-                    'alignment', 'fontColor', 'fontBackgroundColor', 'fontSize', '|',
-                    'insertTable', 'blockQuote', 'undo', 'redo'
-                ]
-                // Không còn simpleUpload ở đây
-            }).then(editor => {
+            ClassicEditor.create(contentTextarea).then(editor => {
                 editorInstance = editor;
             }).catch(error => {
                 console.error(error);
@@ -164,11 +166,29 @@
                 document.getElementById('priceField').style.display = (this.value === 'Trả phí') ? 'block' : 'none';
             });
 
-            document.querySelector('form').addEventListener('submit', function () {
+            // Kiểm tra giá tiền âm trước khi submit
+            document.getElementById('postForm').addEventListener('submit', function (e) {
+                var type = document.getElementById('Type').value;
+                if (type === 'Trả phí') {
+                    var price = parseFloat(document.getElementById('Price').value);
+                    if (isNaN(price) || price < 0) {
+                        e.preventDefault();
+                        showToast("Giá tiền không thể âm");
+                        return false;
+                    }
+                }
                 if (editorInstance) {
                     contentTextarea.value = editorInstance.getData();
                 }
             });
+
+            // Hàm hiển thị toast
+            function showToast(message) {
+                document.getElementById("toastBody").innerText = message;
+                var toastEl = document.getElementById("toastMessage");
+                var toast = new bootstrap.Toast(toastEl);
+                toast.show();
+            }
         });
     </script>
 }

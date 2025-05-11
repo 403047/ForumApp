@@ -210,6 +210,13 @@ namespace ForumApp.Controllers
             // Kiểm tra nếu là bài viết trả phí thì người dùng phải có mã QR
             if (!string.IsNullOrWhiteSpace(post.Type) && post.Type.Trim().ToLower() == "trả phí")
             {
+                // Kiểm tra giá tiền âm
+                if (!Price.HasValue || Price.Value < 0)
+                {
+                    ModelState.AddModelError("", "Giá tiền không thể âm");
+                    ViewBag.Categories = _context.Categories.ToList();
+                    return View(post);
+                }
                 if (string.IsNullOrWhiteSpace(user.QRImagePath))
                 {
                     ModelState.AddModelError("", "Người dùng chưa có mã QR.");
