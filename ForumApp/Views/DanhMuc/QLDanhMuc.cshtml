@@ -61,6 +61,18 @@
     </div>
 </div>
 
+<!-- Toast thông báo -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 9999">
+    <div id="toastMessage" class="toast align-items-center text-bg-danger border-0" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body" id="toastBody">
+                <!-- Nội dung thông báo -->
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    </div>
+</div>
+
 <!-- Modal Thêm Danh Mục -->
 <div class="modal fade" id="addCategoryModal" tabindex="-1" aria-labelledby="addCategoryLabel" aria-hidden="true">
     <div class="modal-dialog">
@@ -166,11 +178,31 @@
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ Id: id })
         })
-        .then(response => response.text())
+        .then(response => {
+            const contentType = response.headers.get("content-type");
+            if (contentType && contentType.indexOf("application/json") !== -1) {
+                return response.json().then(json => ({ json }));
+            }
+            return response.text().then(text => ({ text }));
+        })
         .then(data => {
-            document.getElementById("danhMucTable").innerHTML = data;
-            alert("Xóa danh mục thành công!");
+            if (data.json) {
+                // Có lỗi, hiển thị toast
+                showToast(data.json.message || "Có lỗi xảy ra!");
+            } else {
+                // Xóa thành công, cập nhật bảng
+                document.getElementById("danhMucTable").innerHTML = data.text;
+                alert("Xóa danh mục thành công!");
+            }
         })
         .catch(error => console.error("Lỗi:", error));
+    }
+
+    // Hàm hiển thị toast Bootstrap
+    function showToast(message) {
+        document.getElementById("toastBody").innerText = message;
+        var toastEl = document.getElementById("toastMessage");
+        var toast = new bootstrap.Toast(toastEl);
+        toast.show();
     }
 </script>

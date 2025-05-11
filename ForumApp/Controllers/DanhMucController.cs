@@ -59,6 +59,14 @@ namespace ForumApp.Controllers
                 return NotFound(new { success = false, message = "Danh mục không tồn tại" });
             }
 
+            // Kiểm tra xem có bài Post nào sử dụng danh mục này không
+            bool hasPosts = _context.Posts.Any(p => p.CategoryId == model.Id);
+            if (hasPosts)
+            {
+                // Trả về JSON báo lỗi
+                return Json(new { success = false, message = "Không thể xóa danh mục vì đã có bài viết sử dụng danh mục này!" });
+            }
+
             _context.Categories.Remove(danhMuc);
             _context.SaveChanges();
 
