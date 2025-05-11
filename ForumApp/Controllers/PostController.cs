@@ -330,7 +330,74 @@ namespace ForumApp.Controllers
             }
         }
 
+        [HttpPost]
+        public async Task<IActionResult> UploadImage(IFormFile upload)
+        {
+            if (upload == null || upload.Length == 0)
+                return Json(new { uploaded = false, error = new { message = "Không có file ảnh." } });
 
+            var uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "uploads", "images");
+            if (!Directory.Exists(uploadsFolder))
+                Directory.CreateDirectory(uploadsFolder);
+
+            var fileName = Guid.NewGuid().ToString() + Path.GetExtension(upload.FileName);
+            var filePath = Path.Combine(uploadsFolder, fileName);
+
+            using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await upload.CopyToAsync(stream);
+            }
+
+            var url = "/uploads/images/" + fileName;
+            return Json(new { uploaded = true, url });
+        }
+        [HttpPost]
+        public async Task<IActionResult> Rate(int postId, int stars)
+        {
+            var userId = HttpContext.Session.GetInt32("UserId");
+            if (userId == null)
+            {
+                return Json(new { success = false, message = "Bạn cần đăng nhập để đánh giá!" });
+            }
+
+            if (stars < 1 || stars > 5)
+            {
+                return Json(new { success = false, message = "Số sao không hợp lệ!" });
+            }
+
+            try
+            {
+                // Kiểm tra đã từng đánh giá chưa
+                var existing = await _context.Ratings
+                    .FirstOrDefaultAsync(r => r.PostId == postId && r.UserId == userId.Value);
+               
+                if (existing != null)
+                {
+                    existing.Stars = stars;
+                    await _context.SaveChangesAsync();
+                }
+                else
+                {
+                    var rating = new Rating
+                    {
+                        PostId = postId,
+                        UserId = userId.Value,
+                        Stars = stars
+                    };
+                    _context.Ratings.Add(rating);
+                    await _context.SaveChangesAsync();
+                }
+                // Tính lại tổng đánh giá
+                var ratings = await _context.Ratings.Where(r => r.PostId == postId).ToListAsync();
+                double totalRating = ratings.Any() ? ratings.Average(r => r.Stars) : 0;
+                return Json(new { success = true, message = "Đánh giá thành công!", totalRating = totalRating });
+            }
+            catch (Exception ex)
+            {
+                // Ghi log nếu cần
+                return Json(new { success = false, message = "Đã xảy ra lỗi khi gửi đánh giá." });
+            }
+        }
         // ACTION ThanhToan: Tạo hóa đơn và chi tiết hóa đơn
         // Controllers/PostController.cs
         [HttpPost]

@@ -241,23 +241,27 @@
                     setTimeout(() => $("#rating-message").addClass("d-none"), 2500);
                     return;
                 }
-                $.ajax({
-                    url: "/Post/Rate",
-                    type: "POST",
-                    data: { postId: postId, rating: selectedRating },
-                    success: function (response) {
-                        if (response && response.success) {
-                            $("#rating-message").removeClass("d-none alert-danger").addClass("alert-info").text(response.message);
-                        } else {
-                            $("#rating-message").removeClass("d-none alert-info").addClass("alert-danger").text(response.message || "Đã xảy ra lỗi.");
-                        }
-                        setTimeout(() => $("#rating-message").addClass("d-none"), 2500);
-                    },
-                    error: function () {
-                        $("#rating-message").removeClass("d-none alert-info").addClass("alert-danger").text("Đã xảy ra lỗi khi gửi đánh giá.");
-                        setTimeout(() => $("#rating-message").addClass("d-none"), 2500);
-                    }
-                });
+        $.ajax({
+            url: "/Post/Rate",
+            type: "POST",
+            data: { postId: postId, stars: selectedRating }, // Đổi 'rating' thành 'stars'
+                success: function (response) {
+            if (response && response.success) {
+                $("#rating-message").removeClass("d-none alert-danger").addClass("alert-info").text(response.message);
+                if (response.totalRating !== undefined) {
+                    // Sửa đoạn này: cập nhật lại toàn bộ nội dung phần tổng đánh giá
+                    $("p:contains('Tổng đánh giá')").html("<strong>Tổng đánh giá:</strong> " + parseFloat(response.totalRating).toFixed(1));
+                }
+            } else {
+                $("#rating-message").removeClass("d-none alert-info").addClass("alert-danger").text(response.message || "Đã xảy ra lỗi.");
+            }
+            setTimeout(() => $("#rating-message").addClass("d-none"), 2500);
+        },
+            error: function () {
+                $("#rating-message").removeClass("d-none alert-info").addClass("alert-danger").text("Đã xảy ra lỗi khi gửi đánh giá.");
+                setTimeout(() => $("#rating-message").addClass("d-none"), 2500);
+            }
+        });
             });
         });
     </script>
