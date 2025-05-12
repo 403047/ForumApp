@@ -78,6 +78,13 @@ namespace ForumApp.Controllers
                 return View();
             }
 
+            // Kiểm tra độ mạnh mật khẩu
+            if (!IsStrongPassword(password))
+            {
+                ViewBag.Error = "Mật khẩu phải có ít nhất 8 ký tự, bao gồm chữ hoa, số và ký tự đặc biệt.";
+                return View();
+            }
+
             // Kiểm tra username hoặc email đã tồn tại chưa
             bool userExists = await _context.Users.AnyAsync(u => u.Username == username || u.Email == email);
             if (userExists)
@@ -115,6 +122,19 @@ namespace ForumApp.Controllers
             }
         }
 
+        // Hàm kiểm tra độ mạnh mật khẩu
+        private bool IsStrongPassword(string password)
+        {
+            if (password.Length < 8)
+                return false;
+            if (!password.Any(char.IsUpper))
+                return false;
+            if (!password.Any(char.IsDigit))
+                return false;
+            if (!password.Any(ch => !char.IsLetterOrDigit(ch)))
+                return false;
+            return true;
+        }
         public IActionResult Logout()
         {
             HttpContext.Session.Clear();

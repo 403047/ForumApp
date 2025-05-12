@@ -37,6 +37,9 @@
                     <span class="input-group-text bg-white"><i class="fas fa-lock"></i></span>
                     <input type="password" class="form-control" id="password" name="password" required />
                 </div>
+                <div id="passwordHelp" class="form-text text-danger d-none">
+                    Mật khẩu phải có ít nhất 8 ký tự, bao gồm chữ hoa, số và ký tự đặc biệt.
+                </div>
             </div>
             <button type="submit" class="btn btn-primary w-100 fw-semibold">Đăng ký</button>
         </form>
@@ -48,6 +51,19 @@
         min-height: 100vh;
     }
 </style>
+<script>
+    document.querySelector('form').addEventListener('submit', function(e) {
+        var password = document.getElementById('password').value;
+        var help = document.getElementById('passwordHelp');
+        var strong = /^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
+        if (!strong.test(password)) {
+            help.classList.remove('d-none');
+            e.preventDefault();
+        } else {
+            help.classList.add('d-none');
+        }
+    });
+</script>
 @if (ViewBag.Success != null)
 {
     <script>
